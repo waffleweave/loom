@@ -45,17 +45,29 @@ class CodeSuggester {
 
             // Update the status bar
             // Need to write something to actually return a text message down in the status bar
-            this._statusBarItem.text = keywords[0];
+            this._statusBarItem.text = keywords;
             this._statusBarItem.show();
         } else {
             this._statusBarItem.hide();
         }
     }
 
-    public _getKeywords(doc: TextDocument): string[] {
-        var _words : string[] = [];
-        _words.push('18-HAZARI','A.K','ABBOTABAD');
-        return _words;
+    public _getKeywords(doc: TextDocument): string {
+        //Replace _word with desired status message
+        var _word: string = "wow";
+        let docContent = doc.getText();
+
+        // Parse out unwanted whitespace so the split is accurate
+        docContent = docContent.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
+        docContent = docContent.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+        let wordCount = 0;
+
+        //So here docContent.split(" ") is the actual words contained in the document
+        if (docContent != "") {
+            wordCount = docContent.split(" ").length;
+        }
+
+        return _word;
     }
 
     dispose() {
