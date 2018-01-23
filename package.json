@@ -10,16 +10,10 @@
     "categories": [
         "Other"
     ],
-    "activationEvents": [
-        "onCommand:extension.sayHello"
+        "activationEvents": [
+        "onLanguage:markdown"
     ],
     "main": "./out/extension",
-    "contributes": {
-        "commands": [{
-            "command": "extension.sayHello",
-            "title": "Hello World"
-        }]
-    },
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
