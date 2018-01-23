@@ -11,7 +11,7 @@
         "Other"
     ],
         "activationEvents": [
-        "onLanguage:markdown"
+        "onLanguage:python"
     ],
     "main": "./out/extension",
     "scripts": {

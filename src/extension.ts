@@ -11,19 +11,19 @@ export function activate(context: ExtensionContext) {
     console.log("WaffleWeave loaded");
 
     // create a new word counter
-    let wordCounter = new WordCounter();
-    let controller = new WordCounterController(wordCounter);
+    let wordCounter = new CodeSuggester();
+    let controller = new CodeSuggesterController(wordCounter);
 
     // Add to a list of disposables which are disposed when this extension is deactivated.
     context.subscriptions.push(controller);
     context.subscriptions.push(wordCounter);
 }
 
-class WordCounter {
+class CodeSuggester {
 
     private _statusBarItem: StatusBarItem;
 
-    public updateWordCount() {
+    public updateSuggestion() {
 
         // Create as needed
         if (!this._statusBarItem) {
@@ -40,31 +40,22 @@ class WordCounter {
         let doc = editor.document;
 
         // Only update status if an Markdown file
-        if (doc.languageId === "markdown") {
-            let wordCount = this._getWordCount(doc);
+        if (doc.languageId === "python") {
+            let keywords = this._getKeywords(doc);
 
             // Update the status bar
-    // Update the status bar
-            this._statusBarItem.text = wordCount !== 1 ? `$(pencil) ${wordCount} Words` : '$(pencil) 1 Word';
+            // Need to write something to actually return a text message down in the status bar
+            this._statusBarItem.text = keywords[0];
             this._statusBarItem.show();
         } else {
             this._statusBarItem.hide();
         }
     }
 
-    public _getWordCount(doc: TextDocument): number {
-
-        let docContent = doc.getText();
-
-        // Parse out unwanted whitespace so the split is accurate
-        docContent = docContent.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
-        docContent = docContent.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-        let wordCount = 0;
-        if (docContent != "") {
-            wordCount = docContent.split(" ").length;
-        }
-
-        return wordCount;
+    public _getKeywords(doc: TextDocument): string[] {
+        var _words : string[] = [];
+        _words.push('18-HAZARI','A.K','ABBOTABAD');
+        return _words;
     }
 
     dispose() {
@@ -72,13 +63,13 @@ class WordCounter {
     }
 }
 
-class WordCounterController {
+class CodeSuggesterController {
 
-    private _wordCounter: WordCounter;
+    private _codeSuggester: CodeSuggester;
     private _disposable: Disposable;
 
-    constructor(wordCounter: WordCounter) {
-        this._wordCounter = wordCounter;
+    constructor(wordCounter: CodeSuggester) {
+        this._codeSuggester = wordCounter;
 
         // subscribe to selection change and editor activation events
         let subscriptions: Disposable[] = [];
@@ -86,7 +77,7 @@ class WordCounterController {
         window.onDidChangeActiveTextEditor(this._onEvent, this, subscriptions);
 
         // update the counter for the current file
-        this._wordCounter.updateWordCount();
+        this._codeSuggester.updateSuggestion();
 
         // create a combined disposable from both event subscriptions
         this._disposable = Disposable.from(...subscriptions);
@@ -97,6 +88,6 @@ class WordCounterController {
     }
 
     private _onEvent() {
-        this._wordCounter.updateWordCount();
+        this._codeSuggester.updateSuggestion();
     }
 }
