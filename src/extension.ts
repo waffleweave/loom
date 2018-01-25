@@ -64,7 +64,11 @@ class CodeSuggester {
 
         //So here docContent.split(" ") is the actual words contained in the document
         if (docContent != "") {
-            wordCount = docContent.split(" ").length;
+            wordCount = docContent.split(" ").length
+            
+            if(wordCount > 40) {
+                _word = "Reference: ~/Docs/linked_lists.txt"
+            }
         }
 
         return _word;
