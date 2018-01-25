@@ -54,7 +54,7 @@ class CodeSuggester {
 
     public _getKeywords(doc: TextDocument): string {
         //Replace _word with desired status message
-        var _word: string = "wow";
+        var _word: string = "";
         let docContent = doc.getText();
 
         // Parse out unwanted whitespace so the split is accurate
@@ -66,7 +66,7 @@ class CodeSuggester {
         if (docContent != "") {
             wordCount = docContent.split(" ").length
             
-            if(wordCount > 40) {
+            if(wordCount > 16) {
                 _word = "Reference: ~/Docs/linked_lists.txt"
             }
         }
