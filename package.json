@@ -1,7 +1,7 @@
 {
     "name": "loom",
     "displayName": "Loom",
-    "description": "code helper",
+    "description": "Language Oriented OptimizationMachine",
     "version": "0.0.1",
     "publisher": "none",
     "engines": {
@@ -11,9 +11,17 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:python"
+        "onCommand:extension.sayHello"
     ],
     "main": "./out/extension",
+    "contributes": {
+        "commands": [
+            {
+                "command": "extension.sayHello",
+                "title": "Weave Search"
+            }
+        ]
+    },
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
