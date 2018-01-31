@@ -1,6 +1,6 @@
 {
-    "name": "waffleweave",
-    "displayName": "WaffleWeave",
+    "name": "loom",
+    "displayName": "Loom",
     "description": "code helper",
     "version": "0.0.1",
     "publisher": "none",
@@ -10,7 +10,7 @@
     "categories": [
         "Other"
     ],
-        "activationEvents": [
+    "activationEvents": [
         "onLanguage:python"
     ],
     "main": "./out/extension",
