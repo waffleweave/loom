@@ -3,6 +3,14 @@
 import { window, commands, Disposable, ExtensionContext, StatusBarAlignment, StatusBarItem, TextDocument } from 'vscode';
 import * as WebRequest from 'web-request';
 
+function getinfo(text: string): Promise<string> {
+    var str = "somethign";
+
+    return new Promise((resolve, reject) => {
+        resolve(str)
+    });
+}
+
 // This method is called when your extension is activated. Activation is
 // controlled by the activation events defined in package.json.
 export function activate(context: ExtensionContext) {
@@ -11,10 +19,12 @@ export function activate(context: ExtensionContext) {
     // This line of code will only be executed once when your extension is activated.
     console.log('Congratulations, your extension "WordCount" is now active!');
 
-    (async function () {
-        var result = await WebRequest.get('http://www.google.com/');
-        console.log(result.content);
-    })();
+    // var result = WebRequest.get('http://www.google.com/');
+    var p: Promise<string> = getinfo("hello");
+
+    p.then((res) => {
+        console.log(res);
+    });
 
     // create a new word counter
     let weaveSearcher = new WeaveSearcher();
