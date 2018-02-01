@@ -3,14 +3,6 @@
 import { window, commands, Disposable, ExtensionContext, StatusBarAlignment, StatusBarItem, TextDocument } from 'vscode';
 import * as WebRequest from 'web-request';
 
-function getinfo(text: string): Promise<string> {
-    var str = "somethign";
-
-    return new Promise((resolve, reject) => {
-        resolve(str)
-    });
-}
-
 // This method is called when your extension is activated. Activation is
 // controlled by the activation events defined in package.json.
 export function activate(context: ExtensionContext) {
@@ -18,13 +10,6 @@ export function activate(context: ExtensionContext) {
     // Use the console to output diagnostic information (console.log) and errors (console.error).
     // This line of code will only be executed once when your extension is activated.
     console.log('Congratulations, your extension "WordCount" is now active!');
-
-    // var result = WebRequest.get('http://www.google.com/');
-    var p: Promise<string> = getinfo("hello");
-
-    p.then((res) => {
-        console.log(res);
-    });
 
     // create a new word counter
     let weaveSearcher = new WeaveSearcher();
@@ -53,20 +38,30 @@ class WeaveSearcher {
         var text = editor.document.getText(selection);
 
         // Perform the search
-        window.showQuickPick(this._callWatson(text));
+        var answers : string;
+        var webResultPromise: Promise<WebRequest.Response<string>> = this._callWatson('http://www.google.com/');
+        webResultPromise.then((res) => {
+            answers = res.content;
+        });
+
+        //Format the search
+        answers = answers.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
+        answers = answers.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+        let wordCount = 0;
+        var wordList = text.split(" ");
+
+        //Handle the results
+        if (wordList.length > 25) {
+            wordList = wordList.slice(0,25);
+        }
+        window.showQuickPick(wordList);
     }
 
-    private _callWatson(text: string): string[] {
-        // Parse out unwanted whitespace so the split is accurate
-        text = text.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
-        text = text.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-        let wordCount = 0;
-        if (text != "") {
-            var wordList = text.split(" ");
-            return wordList;
-        } else {
-            return [""];
-        }
+    private _callWatson(url: string): Promise<WebRequest.Response<string>> {
+        var result = WebRequest.get(url);
+        return new Promise((resolve, reject) => {
+            resolve(result)
+        });
     }
 
     dispose() {
