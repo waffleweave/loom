@@ -27,7 +27,7 @@ class WeaveSearcher {
 
     private _statusBarItem: StatusBarItem;
 
-    public search() {
+    public async search() {
 
         var editor = window.activeTextEditor;
         if (!editor) {
@@ -39,10 +39,9 @@ class WeaveSearcher {
 
         // Perform the search
         var answers : string;
-        var webResultPromise: Promise<WebRequest.Response<string>> = this._callWatson('http://www.google.com/');
-        webResultPromise.then((res) => {
-            answers = res.content;
-        });
+        var webResultPromise: WebRequest.Response<string> = await this._callWatson('http://www.google.com/');
+        answers = webResultPromise.content;
+        console.log(answers);
 
         //Format the search
         answers = answers.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
@@ -54,6 +53,7 @@ class WeaveSearcher {
         if (wordList.length > 25) {
             wordList = wordList.slice(0,25);
         }
+        console.log(wordList);
         window.showQuickPick(wordList);
     }
 
