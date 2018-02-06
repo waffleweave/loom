@@ -36,29 +36,36 @@ class WeaveSearcher {
 
         var selection = editor.selection;
         var text = editor.document.getText(selection);
-
+        text = text.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
+        text = text.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+        
         // Perform the search
+        var url = 'https://api.gemini.com/v1/pubticker/btcusd';
+        var webResult = await this._callWatson(url);
+        var resultList = this._parseJson(webResult);
+        console.log(resultList);
+        window.showQuickPick(resultList);
+    }
+
+    private _parseJson(jsonChunk: Object):string[] {
+        var raw: JSON = <JSON> jsonChunk;
         var answers : string;
-        var webResultPromise: WebRequest.Response<string> = await this._callWatson('http://www.google.com/');
-        answers = webResultPromise.content;
+        answers = JSON.stringify(raw);
         console.log(answers);
 
         //Format the search
-        answers = answers.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
-        answers = answers.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
         let wordCount = 0;
-        var wordList = text.split(" ");
+        var wordList = answers.split("\n");
 
         //Handle the results
         if (wordList.length > 25) {
             wordList = wordList.slice(0,25);
         }
-        console.log(wordList);
-        window.showQuickPick(wordList);
+        return wordList;
     }
 
     private _callWatson(url: string): Promise<WebRequest.Response<string>> {
-        var result = WebRequest.get(url);
+        var result = WebRequest.json<any>(url);
         return new Promise((resolve, reject) => {
             resolve(result)
         });
