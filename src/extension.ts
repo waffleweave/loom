@@ -1,6 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the necessary extensibility types to use in your code below
 import { window, commands, Disposable, ExtensionContext, StatusBarAlignment, StatusBarItem, TextDocument } from 'vscode';
+import * as WebRequest from 'web-request';
 
 // This method is called when your extension is activated. Activation is
 // controlled by the activation events defined in package.json.
@@ -26,7 +27,7 @@ class WeaveSearcher {
 
     private _statusBarItem: StatusBarItem;
 
-    public search() {
+    public async search() {
 
         var editor = window.activeTextEditor;
         if (!editor) {
@@ -35,22 +36,39 @@ class WeaveSearcher {
 
         var selection = editor.selection;
         var text = editor.document.getText(selection);
-
-        // Perform the search
-        window.showQuickPick(this._callWatson(text));
-    }
-
-    private _callWatson(text: string): string[] {
-        // Parse out unwanted whitespace so the split is accurate
         text = text.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
         text = text.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+        
+        // Perform the search
+        var url = 'https://api.gemini.com/v1/pubticker/btcusd';
+        var webResult = await this._callWatson(url);
+        var resultList = this._parseJson(webResult);
+        console.log(resultList);
+        window.showQuickPick(resultList);
+    }
+
+    private _parseJson(jsonChunk: Object):string[] {
+        var raw: JSON = <JSON> jsonChunk;
+        var answers : string;
+        answers = JSON.stringify(raw);
+        console.log(answers);
+
+        //Format the search
         let wordCount = 0;
-        if (text != "") {
-            var wordList = text.split(" ");
-            return wordList;
-        } else {
-            return [""];
+        var wordList = answers.split("\n");
+
+        //Handle the results
+        if (wordList.length > 25) {
+            wordList = wordList.slice(0,25);
         }
+        return wordList;
+    }
+
+    private _callWatson(url: string): Promise<WebRequest.Response<string>> {
+        var result = WebRequest.json<any>(url);
+        return new Promise((resolve, reject) => {
+            resolve(result)
+        });
     }
 
     dispose() {
