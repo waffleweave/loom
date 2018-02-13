@@ -29,8 +29,11 @@ export class WeaveSearcher {
 
     public async search() {
 
+        console.log('Running search...');
+
         var editor = window.activeTextEditor;
         if (!editor) {
+            console.log('No open text editor!');
             return; // No open text editor
         }
 
@@ -39,6 +42,8 @@ export class WeaveSearcher {
         text = text.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
         text = text.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
         
+        console.log(`Searching with text: ${text}`)
+
         // Perform the search
         var url = 'https://api.gemini.com/v1/pubticker/btcusd';
         var webResult = await this._callWatson(url);
