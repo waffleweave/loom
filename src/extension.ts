@@ -31,7 +31,8 @@ class WeaveSearcher {
     public async search() {
 
         var searchText : string = await window.showInputBox();
-        var url = "https://gateway.watsonplatform.net/discovery/api";
+        // TODO: move away from URL/WebRequests -> Watson Node library
+        var url = "https://gateway.watsonplatform.net/discovery/api/v1/environments/3120b03d-ac9c-46ac-a5e8-eaa282965961/collections/9ccfd375-fb1b-45c8-91d5-c3b2128e8038/query?version=2017-11-07&count=5&query=" + searchText;
         var webResult = await this._callWatson(url, searchText);
         var resultList = this._parseJson(webResult);
         console.log(resultList);
@@ -51,12 +52,12 @@ class WeaveSearcher {
     }
 
     private _buildWatsonHeaders(query: string):any {
-        var auth = {
-            username: '841350ca-e949-441d-af78-e5a42b88a78e',
-            password: 'ptLDYEX3X3JF',
-            version_date: '2017-11-07'
+        return {
+            auth: {
+                username: '841350ca-e949-441d-af78-e5a42b88a78e',
+                password: 'ptLDYEX3X3JF',
+            }
         };
-        return null;
     }
 
     private _onClickedSearchResult(item: QuickPickItem | string):any {
@@ -66,6 +67,7 @@ class WeaveSearcher {
 
     private _callWatson(url: string, searchText: string): Promise<WebRequest.Response<string>> {
         var headers = this._buildWatsonHeaders(searchText);
+        console.log(headers);
         var result = WebRequest.json<any>(url, headers);
         return new Promise((resolve, reject) => {
             resolve(result)
