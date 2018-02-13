@@ -54,6 +54,14 @@ class WeaveSearcher {
         return wordList;
     }
 
+    private _buildWatsonHeaders(query: string):any {
+        var auth = {
+            username: '841350ca-e949-441d-af78-e5a42b88a78e',
+            password: 'ptLDYEX3X3JF',
+            version_date: '2017-11-07'
+        };
+    }
+
     private _onClickedSearchResult(item: QuickPickItem | string):any {
         item = item.toString();
         window.showInformationMessage(item);
