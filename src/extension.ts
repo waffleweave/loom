@@ -23,7 +23,7 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(disposable);
 }
 
-class WeaveSearcher {
+export class WeaveSearcher {
 
     private _statusBarItem: StatusBarItem;
 

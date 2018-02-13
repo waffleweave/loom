@@ -19,4 +19,12 @@ suite("Extension Tests", () => {
         assert.equal(-1, [1, 2, 3].indexOf(5));
         assert.equal(-1, [1, 2, 3].indexOf(0));
     });
+
+    test("WeaveSearcher", () => {
+        let ws = new myExtension.WeaveSearcher();
+        let json = "myjson";
+
+        // test WeaveSearcher functions
+        assert.equal(-1, -1);
+    });
 });
