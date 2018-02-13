@@ -23,7 +23,7 @@ suite("Extension Tests", () => {
     test("WeaveSearcher", () => {
         let ws = new myExtension.WeaveSearcher();
         let json = "myjson";
-
+        // test commit
         // test WeaveSearcher functions
         assert.equal(-1, -1);
     });
