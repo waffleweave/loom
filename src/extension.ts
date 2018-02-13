@@ -30,13 +30,9 @@ class WeaveSearcher {
 
     public async search() {
 
-        var editor = window.activeTextEditor;
-        if (!editor) {
-            return; // No open text editor
-        }
-
-        var url = 'https://api.gemini.com/v1/pubticker/btcusd';
-        var webResult = await this._callWatson(url);
+        var searchText : string = await window.showInputBox();
+        var url = "https://gateway.watsonplatform.net/discovery/api";
+        var webResult = await this._callWatson(url, searchText);
         var resultList = this._parseJson(webResult);
         console.log(resultList);
         let options = <QuickPickOptions> {
@@ -60,6 +56,7 @@ class WeaveSearcher {
             password: 'ptLDYEX3X3JF',
             version_date: '2017-11-07'
         };
+        return null;
     }
 
     private _onClickedSearchResult(item: QuickPickItem | string):any {
@@ -67,8 +64,9 @@ class WeaveSearcher {
         window.showInformationMessage(item);
     }
 
-    private _callWatson(url: string): Promise<WebRequest.Response<string>> {
-        var result = WebRequest.json<any>(url);
+    private _callWatson(url: string, searchText: string): Promise<WebRequest.Response<string>> {
+        var headers = this._buildWatsonHeaders(searchText);
+        var result = WebRequest.json<any>(url, headers);
         return new Promise((resolve, reject) => {
             resolve(result)
         });
