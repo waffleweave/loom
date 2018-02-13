@@ -1,6 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the necessary extensibility types to use in your code below
-import { window, commands, Disposable, ExtensionContext, StatusBarAlignment, StatusBarItem, TextDocument } from 'vscode';
+import { window, commands, Disposable, ExtensionContext, StatusBarAlignment,
+     StatusBarItem, TextDocument, QuickPickItem, QuickPickOptions } from 'vscode';
 import * as WebRequest from 'web-request';
 
 // This method is called when your extension is activated. Activation is
@@ -34,17 +35,14 @@ class WeaveSearcher {
             return; // No open text editor
         }
 
-        var selection = editor.selection;
-        var text = editor.document.getText(selection);
-        text = text.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
-        text = text.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-        
-        // Perform the search
         var url = 'https://api.gemini.com/v1/pubticker/btcusd';
         var webResult = await this._callWatson(url);
         var resultList = this._parseJson(webResult);
         console.log(resultList);
-        window.showQuickPick(resultList);
+        let options = <QuickPickOptions> {
+            onDidSelectItem: item => { this._onClickedSearchResult(item); }
+        }
+        window.showQuickPick(resultList, options);
     }
 
     private _parseJson(jsonChunk: Object):string[] {
@@ -52,16 +50,13 @@ class WeaveSearcher {
         var answers : string;
         answers = JSON.stringify(raw);
         console.log(answers);
-
-        //Format the search
-        let wordCount = 0;
         var wordList = answers.split("\n");
-
-        //Handle the results
-        if (wordList.length > 25) {
-            wordList = wordList.slice(0,25);
-        }
         return wordList;
+    }
+
+    private _onClickedSearchResult(item: QuickPickItem | string):any {
+        item = item.toString();
+        window.showInformationMessage(item);
     }
 
     private _callWatson(url: string): Promise<WebRequest.Response<string>> {
