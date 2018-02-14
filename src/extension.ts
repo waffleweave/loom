@@ -14,6 +14,9 @@ export function activate(context: ExtensionContext) {
 
 interface WatsonJSONResult {
     results: Array<{
+        extracted_metatdata: {
+            filename: string;
+        }
         text: string;
     }>;
 }
@@ -31,9 +34,7 @@ class WeaveSearcher {
         // TODO: move away from URL/WebRequests -> Watson Node library
         var url = "https://gateway.watsonplatform.net/discovery/api/v1/environments/3120b03d-ac9c-46ac-a5e8-eaa282965961/collections/9ccfd375-fb1b-45c8-91d5-c3b2128e8038/query?version=2017-11-07&count=5&query=" + searchText;
         var webResult = await this._callWatson(url, searchText);
-        console.log(webResult);
         var resultList = this._parseJson(webResult);
-        console.log(resultList);
         let options = <QuickPickOptions> {
             onDidSelectItem: item => { this._onClickedSearchResult(item); }
         }
@@ -45,11 +46,12 @@ class WeaveSearcher {
         var randoJson: WatsonJSONResult = JSON.parse(list);
         var items = [];
         for (var response of randoJson.results) {
-            var t: WatsonParsedResult = {
-                name = "";
-                text = response.text;
-            }
+            var t : WatsonParsedResult = new WatsonParsedResult();
+            t.text = response.text;
+            t.name = response.extracted_metatdata.filename;
+            items.push(t);
         }
+        console.log(items);
         return items;
     }
 
