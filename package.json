@@ -20,7 +20,11 @@
                 "command": "extension.sayHello",
                 "title": "Weave Search"
             }
-        ]
+        ],
+        "keybindings": [{
+            "command": "extension.sayHello",
+            "key": "ctrl+f1"
+        }]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
