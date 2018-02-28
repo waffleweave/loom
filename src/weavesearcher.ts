@@ -5,47 +5,100 @@ import { JSONHelper } from './jsonhelper';
 
 export class WeaveSearcher {
 
-    public async search() {
-
-        var watsonHelper = new WatsonHelper();
-        var jsonHelper = new JSONHelper();
+    public async searchBar() {
 
         // prompt user for input
-        var searchText : string = await window.showInputBox();
+        var searchText = window.showInputBox();
+
+        // get response from watson
+        var watsonResponse = this.search(searchText)
+            .catch((err) => { console.log(`\n!!! ERROR searching: ${err}`); });
+
+        // parse json response (or get default)
+        var jsonResult = this.parseJSON(searchText, watsonResponse)
+            .catch((err) => { console.log(`\n!!! ERROR parsing: ${err}`); });
+
+        // show quick pick options
+        var selected = this.promptQuickPick(jsonResult)
+            .catch((err) => { console.log(`\n!!! ERROR showing quick pick: ${err}`); });
+
+        // show output channel
+        this.showOutputChannel('Weave Search Results', selected, jsonResult);
+    }
+
+    private async search(stringPromise: Thenable<string>) : Promise<any> {
+
+        // initialize stuff while waiting for the search text
+        var watsonHelper = new WatsonHelper();
+
+        // wait on the search text before continuing
+        var searchText = await stringPromise;
 
         // call watson with search query (async)
-        var watsonResponse = await watsonHelper.searchWatson(searchText)
+        var watsonResponse = watsonHelper.searchWatson(searchText)
             .then((result) => { return result; })
             .catch((err) => {
-                // window.showErrorMessage(`Failed to query watson services: ${err}`);
+                window.showErrorMessage(`Failed to query watson services: ${err}`);
                 return null;
             });
 
-        // setup local stuff while query is running
-        var ochannel = window.createOutputChannel('watson_channel');
+        return watsonResponse;
+    }
 
-        // parse response into key-value pair dict
-        var jsonResult;
+    private async parseJSON(searchPromise: Thenable<string>, watsonResponsePromise: Promise<any>) : Promise<any> {
+
+        // initialize stuff while waiting for the searchText and response
+        let jsonHelper = new JSONHelper();
+
+        // wait for search text
+        let searchText = await searchPromise;
+        
+        // backup in case we cannot hit watson services
+        var jsonResult : any;
         if (searchText.includes("help")) {
             jsonResult = getDefaultResponse(searchText);
         }
         else {
+            // wait for required response variable
+            let watsonResponse = await watsonResponsePromise;
+            console.log('got watsonResponse (parseJSON)');
             jsonResult = jsonHelper.parseJSON(watsonResponse);
         }
+
+        // return promise of json result
+        return jsonResult;
+    }
+
+    private async promptQuickPick(jsonPromise: any) : Promise<any> {
         
+        // wait for required variable
+        let jsonResult = await jsonPromise;
+
         // extract keys (filenames)
         var keys = [];
         for (var r in jsonResult) {
             keys.push(r);
         }
 
-        // wait for user to select desired file
-        var selected = await window.showQuickPick(keys);
+        // return promise of selection
+        return window.showQuickPick(keys);
+    }
+
+    private async showOutputChannel(outputName: string, selectedPromise: Thenable<any>, jsonResultPromise: Promise<any>) : Promise<boolean> {
         
+        // setup local stuff while waiting for variables
+        var ochannel = window.createOutputChannel(outputName);
+
+        // wait for our required variables
+        let jsonResult = await jsonResultPromise;
+        let selected = await selectedPromise;
+
         // show corresponding result from selection
         ochannel.appendLine(`Results from chosen: ${selected}`);
         ochannel.append(jsonResult[selected]);
         ochannel.show();
+
+        return true;
     }
 
     dispose() { }
