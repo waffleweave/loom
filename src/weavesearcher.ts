@@ -1,5 +1,5 @@
 
-import { window } from 'vscode';
+import { window, Selection, Position } from 'vscode';
 import { WatsonHelper } from './watsonhelper';
 import { JSONHelper } from './jsonhelper';
 
@@ -8,33 +8,72 @@ export class WeaveSearcher {
     public async searchBar() {
 
         // prompt user for input
-        var searchText = window.showInputBox();
+        var searchPromise = window.showInputBox();
 
         // get response from watson
-        var watsonResponse = this.search(searchText)
-            .catch((err) => { console.log(`\n!!! ERROR searching: ${err}`); });
+        var watsonResponse = this.searchWatson(searchPromise)
+            .catch((err) => { 
+                console.log(`\n!!! ERROR searching: ${err}`);
+                window.showErrorMessage(`Failed to searchWatson: ${err}`);
+             });
 
         // parse json response (or get default)
-        var jsonResult = this.parseJSON(searchText, watsonResponse)
-            .catch((err) => { console.log(`\n!!! ERROR parsing: ${err}`); });
+        var jsonResult = this.parseJSON(watsonResponse)
+            .catch((err) => { 
+                console.log(`\n!!! ERROR parsing: ${err}`);
+                window.showErrorMessage(`Failed to parseJSON: ${err}`);
+            });
 
         // show quick pick options
         var selected = this.promptQuickPick(jsonResult)
-            .catch((err) => { console.log(`\n!!! ERROR showing quick pick: ${err}`); });
+            .catch((err) => { 
+                console.log(`\n!!! ERROR showing quick pick: ${err}`);
+                window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
+             });
 
         // show output channel
         this.showOutputChannel('Weave Search Results', selected, jsonResult);
     }
 
-    private async search(stringPromise: Thenable<string>) : Promise<any> {
+    public async feelingLucky() {
 
-        // initialize stuff while waiting for the search text
-        var watsonHelper = new WatsonHelper();
+        // get current selection, and change it to select whole lines
+        var editor = window.activeTextEditor;
+        var selection = editor.selection;
+        var newSelection = new Selection(new Position(selection.start.line, 0), new Position(selection.end.line+1, 0));
+        editor.selection = newSelection;
 
-        // wait on the search text before continuing
-        var searchText = await stringPromise;
+        // get current text of selected lines
+        var selectedText = editor.document.getText(editor.selection);
+        var selectedPromise = new Promise<string>((resolve, reject) => resolve(selectedText));
 
-        // call watson with search query (async)
+        // query watson the selection
+        var watsonResponse = this.searchWatson(selectedPromise)
+            .catch((err) => { 
+                console.log(`\n!!! ERROR searching: ${err}`);
+                window.showErrorMessage(`Failed to searchWatson: ${err}`);
+            });
+
+        // parse json response (or get default)
+        var jsonResult = this.parseJSON(watsonResponse)
+            .catch((err) => { 
+                console.log(`\n!!! ERROR parsing: ${err}`);
+                window.showErrorMessage(`Failed to parseJSON: ${err}`);
+             });
+
+        // show output channel
+        this.showFirstOutputChannel('Weave Search Results', jsonResult);
+    }
+
+    private async searchWatson(searchThenable: Thenable<string>) : Promise<any> {
+
+        // initialize variables while waiting for results
+        let watsonHelper = new WatsonHelper();
+
+        // wait for results
+        let searchText = await searchThenable;
+
+        // search watson
         var watsonResponse = watsonHelper.searchWatson(searchText)
             .then((result) => { return result; })
             .catch((err) => {
@@ -45,31 +84,20 @@ export class WeaveSearcher {
         return watsonResponse;
     }
 
-    private async parseJSON(searchPromise: Thenable<string>, watsonResponsePromise: Promise<any>) : Promise<any> {
+    private async parseJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
 
         // initialize stuff while waiting for the searchText and response
         let jsonHelper = new JSONHelper();
 
-        // wait for search text
-        let searchText = await searchPromise;
-        
-        // backup in case we cannot hit watson services
-        var jsonResult : any;
-        if (searchText.includes("help")) {
-            jsonResult = getDefaultResponse(searchText);
-        }
-        else {
-            // wait for required response variable
-            let watsonResponse = await watsonResponsePromise;
-            console.log('got watsonResponse (parseJSON)');
-            jsonResult = jsonHelper.parseJSON(watsonResponse);
-        }
+        // wait for response
+        let watsonResponse = await watsonResponsePromise;
+        let jsonResult = jsonHelper.parseJSON(watsonResponse);
 
         // return promise of json result
         return jsonResult;
     }
 
-    private async promptQuickPick(jsonPromise: any) : Promise<any> {
+    private async promptQuickPick(jsonPromise: Thenable<any>) : Promise<any> {
         
         // wait for required variable
         let jsonResult = await jsonPromise;
@@ -84,7 +112,7 @@ export class WeaveSearcher {
         return window.showQuickPick(keys);
     }
 
-    private async showOutputChannel(outputName: string, selectedPromise: Thenable<any>, jsonResultPromise: Promise<any>) : Promise<boolean> {
+    private async showOutputChannel(outputName: string, selectedPromise: Thenable<any>, jsonResultPromise: Thenable<any>) : Promise<boolean> {
         
         // setup local stuff while waiting for variables
         var ochannel = window.createOutputChannel(outputName);
@@ -96,6 +124,29 @@ export class WeaveSearcher {
         // show corresponding result from selection
         ochannel.appendLine(`Results from chosen: ${selected}`);
         ochannel.append(jsonResult[selected]);
+        ochannel.show();
+
+        return true;
+    }
+
+    private async showFirstOutputChannel(outputName: string, jsonResultPromise: Thenable<any>) : Promise<boolean> {
+        
+        // setup local stuff while waiting for variables
+        var ochannel = window.createOutputChannel(outputName);
+
+        // wait for our required variables
+        let jsonResult = await jsonResultPromise;
+
+        // this is ridiculous can someone fix this
+        let firstKey;
+        for (var r in jsonResult){
+            firstKey = r;
+            break;
+        }
+
+        // show corresponding result from selection
+        ochannel.appendLine(`Lucky Weave Results:`);
+        ochannel.append(jsonResult[firstKey]);
         ochannel.show();
 
         return true;

@@ -11,10 +11,10 @@ export function activate(context: ExtensionContext) {
     let sayHelloCommand = commands.registerCommand('extension.sayHello', () => {
         weaveSearcher.searchBar();
     });
-    // let searchThisCommand = commands.registerCommand('extension.searchThis', (text) => {
-    //     weaveSearcher.search(text);
-    // });
+    let searchThisCommand = commands.registerCommand('extension.searchThis', () => {
+        weaveSearcher.feelingLucky();
+    });
     context.subscriptions.push(weaveSearcher);
     context.subscriptions.push(sayHelloCommand);
-    // context.subscriptions.push(searchThisCommand);
+    context.subscriptions.push(searchThisCommand);
 }
