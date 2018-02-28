@@ -1,0 +1,7 @@
+Note: you probably don't want to change anything outside the "contributes" section.
+
+In "contributes" -> "menus",
+    "commandPalette" refers to the Ctrl+Shift+P menu
+    "editor/title" is the editor interface itself
+    "editor/context" is the editor's right-click menu
+    

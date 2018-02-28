@@ -11,7 +11,8 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello"
+        "onCommand:extension.sayHello",
+        "onCommand:extension.searchThis"
     ],
     "main": "./out/extension",
     "contributes": {
@@ -19,8 +20,34 @@
             {
                 "command": "extension.sayHello",
                 "title": "Weave Search"
+            },
+            {
+                "command": "extension.searchThis",
+                "title": "Lucky Weave"
             }
-        ]
+        ],
+        "keybindings": [
+            {
+                "command": "extension.sayHello",
+                "key": "ctrl+f1"
+            },
+            {
+                "command": "extension.searchThis",
+                "key": "ctrl+shift+j"
+            }
+        ],
+        "menus": {
+            "editor/context": [{
+                "when": "editorHasSelection",
+                "command": "extension.searchThis",
+                "group": "navigation"
+            }],
+            "editor/title": [{
+                "when": "resourceLangId == python",
+                "command": "extension.sayHello",
+                "group": "navigation"
+            }]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

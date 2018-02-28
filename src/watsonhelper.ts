@@ -14,7 +14,6 @@ export class WatsonHelper {
 
     private _buildWatsonHeaders(query: string): any {
         var credential = require('../env/discovery_credential.json');
-        console.log(credential);
         return credential;
     }
 
