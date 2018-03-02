@@ -84,13 +84,14 @@ export class WeaveSearcher {
         return watsonResponse;
     }
 
-    private async parseJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
+    public async parseJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
 
         // initialize stuff while waiting for the searchText and response
         let jsonHelper = new JSONHelper();
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
+
         let jsonResult = jsonHelper.parseJSON(watsonResponse);
 
         // return promise of json result
