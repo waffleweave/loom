@@ -13,6 +13,38 @@ import * as myExtension from '../extension';
 import { JSONHelper } from '../jsonhelper';
 import { WeaveSearcher } from '../weavesearcher';
 
+// Defines a Mocha test suite to group tests of similar kind together
+suite("JSONHelper Tests", () => {
+
+    test('JSONHelper Parses Valid Discovery Response', () => {
+        let jh = new JSONHelper();
+        let testObject = mockDiscResponse;
+        let expected = mockJSONResponse;
+        let actual = jh.parseJSON(testObject);
+
+        assert.equal(actual['lists_append.docx'], expected['lists_append.docx']);
+        assert.equal(Object.keys(actual).length, Object.keys(expected).length);
+    });
+});
+
+suite("WeaveSearcher Tests", () => {
+
+    test('WeaveSearcher parseJSON parses valid Discover Response', (done) => {
+        let ws = new WeaveSearcher();
+        let testObject = mockDiscResponse;
+        let expected = mockJSONResponse;
+        let sent = new Promise<any>((resolve, reject) => resolve(testObject));
+        ws.parseJSON(sent)
+            .then((actual) => {
+                assert.equal(actual['lists_append.docx'], expected['lists_append.docx']);
+                assert.equal(Object.keys(actual).length, Object.keys(expected).length);
+                done();
+            });
+    });
+
+});
+
+// you should collapse these with your editor probably
 var mockDiscResponse = new Object({
     matching_results: 17,
     results: [
@@ -93,38 +125,6 @@ var mockDiscResponse = new Object({
         })
     ]
 })
-
 var mockJSONResponse = new Object({
     'lists_append.docx': "THIS IS THE TEXT THAT WILL BE EXTRACTED                    FULL OF SPACES AND DUMB THINGS                        TABS                {!@#$%^&*()} SYMBOLS,,,,..,..,SAD       ETC"
 })
-
-// Defines a Mocha test suite to group tests of similar kind together
-suite("JSONHelper Tests", () => {
-
-    test('JSONHelper Parses Valid Discovery Response', () => {
-        let jh = new JSONHelper();
-        let testObject = mockDiscResponse;
-        let expected = mockJSONResponse;
-        let actual = jh.parseJSON(testObject);
-
-        assert.equal(actual['lists_append.docx'], expected['lists_append.docx']);
-        assert.equal(Object.keys(actual).length, Object.keys(expected).length);
-    });
-});
-
-suite("WeaveSearcher Tests", () => {
-
-    test('WeaveSearcher parseJSON parses valid Discover Response', (done) => {
-        let ws = new WeaveSearcher();
-        let testObject = mockDiscResponse;
-        let expected = mockJSONResponse;
-        let sent = new Promise<any>((resolve, reject) => resolve(testObject));
-        ws.parseJSON(sent)
-            .then((actual) => {
-                assert.equal(actual['lists_append.docx'], expected['lists_append.docx']);
-                assert.equal(Object.keys(actual).length, Object.keys(expected).length);
-                done();
-            });
-    });
-
-});
