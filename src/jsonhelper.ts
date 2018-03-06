@@ -30,6 +30,7 @@ export class JSONHelper {
     public parseNLCJSON(jsonChunk: Object): string {
         var blob = JSON.stringify(<JSON> jsonChunk);
         var blobJSON: NLCJSONResult = JSON.parse(blob);
+        console.log("PARSED TOP CLASS: " + blobJSON.top_class);
         return blobJSON.top_class;
     }
 
