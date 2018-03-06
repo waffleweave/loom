@@ -54,10 +54,8 @@ export class WeaveSearcher {
                 console.log(`\n!!! ERROR searching: ${err}`);
                 window.showErrorMessage(`Failed to classify with NLC: ${err}`);
             });
-        
-        // ??? why doesn't this work
-        var holder = await(NLCPromise);
-        var jsonNLCResult = this.parseNLCJSON(holder)
+
+        var jsonNLCResult = this.parseNLCJSON(NLCResponse)
             .catch((err) => { 
                 console.log(`\n!!! ERROR parsing: ${err}`);
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
@@ -110,7 +108,7 @@ export class WeaveSearcher {
         // wait for results
         let searchText = await searchThenable;
         var NLCAnswer = watsonHelper.hitNLC(searchText)            
-            .then((result) => { console.log(result); })
+            .then((result) => { return result; })
             .catch((err) => {
                 window.showErrorMessage(`Failed to query watson services: ${err}`);
                 return null;
@@ -126,6 +124,7 @@ export class WeaveSearcher {
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
+        console.log(watsonResponse);
         let jsonResult = jsonHelper.parseDiscoveryJSON(watsonResponse);
 
         // return promise of json result
