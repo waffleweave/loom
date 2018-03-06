@@ -20,7 +20,7 @@ suite("JSONHelper Tests", () => {
         let jh = new JSONHelper();
         let testObject = mockDiscResponse;
         let expected = mockJSONResponse;
-        let actual = jh.parseJSON(testObject);
+        let actual = jh.parseDiscoveryJSON(testObject);
 
         assert.equal(actual['lists_append.docx'], expected['lists_append.docx']);
         assert.equal(Object.keys(actual).length, Object.keys(expected).length);
@@ -34,7 +34,7 @@ suite("WeaveSearcher Tests", () => {
         let testObject = mockDiscResponse;
         let expected = mockJSONResponse;
         let sent = new Promise<any>((resolve, reject) => resolve(testObject));
-        ws.parseJSON(sent)
+        ws.parseDiscoveryJSON(sent)
             .then((actual) => {
                 assert.equal(actual['lists_append.docx'], expected['lists_append.docx']);
                 assert.equal(Object.keys(actual).length, Object.keys(expected).length);

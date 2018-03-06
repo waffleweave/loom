@@ -11,14 +11,14 @@ export class WeaveSearcher {
         var searchPromise = window.showInputBox();
 
         // get response from watson
-        var watsonResponse = this.searchWatson(searchPromise)
+        var watsonResponse = this.searchDiscovery(searchPromise)
             .catch((err) => { 
                 console.log(`\n!!! ERROR searching: ${err}`);
-                window.showErrorMessage(`Failed to searchWatson: ${err}`);
+                window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
              });
 
         // parse json response (or get default)
-        var jsonResult = this.parseJSON(watsonResponse)
+        var jsonResult = this.parseDiscoveryJSON(watsonResponse)
             .catch((err) => { 
                 console.log(`\n!!! ERROR parsing: ${err}`);
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
@@ -35,6 +35,7 @@ export class WeaveSearcher {
         this.showOutputChannel('Weave Search Results', selected, jsonResult);
     }
 
+    //I've taken this over for the NLC->Discovery path
     public async feelingLucky() {
 
         // get current selection, and change it to select whole lines
@@ -46,26 +47,40 @@ export class WeaveSearcher {
         // get current text of selected lines
         var selectedText = editor.document.getText(editor.selection);
         var selectedPromise = new Promise<string>((resolve, reject) => resolve(selectedText));
-
-        // query watson the selection
-        var watsonResponse = this.searchWatson(selectedPromise)
+        
+        //Feed it to NLC
+        var NLCResponse = this.classifyWithNLC(selectedPromise)
             .catch((err) => { 
                 console.log(`\n!!! ERROR searching: ${err}`);
-                window.showErrorMessage(`Failed to searchWatson: ${err}`);
+                window.showErrorMessage(`Failed to classify with NLC: ${err}`);
+            });
+
+        var jsonNLCResult = this.parseNLCJSON(NLCResponse)
+            .catch((err) => { 
+                console.log(`\n!!! ERROR parsing: ${err}`);
+                window.showErrorMessage(`Failed to parseJSON: ${err}`);
+            });
+
+        // Now to discovery based on MLE 
+        var discoveryResponse = this.searchDiscovery(jsonNLCResult)
+            .catch((err) => { 
+                console.log(`\n!!! ERROR searching: ${err}`);
+                window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
             });
 
         // parse json response (or get default)
-        var jsonResult = this.parseJSON(watsonResponse)
+        var jsonDiscoveryResult = this.parseDiscoveryJSON(discoveryResponse)
             .catch((err) => { 
                 console.log(`\n!!! ERROR parsing: ${err}`);
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
              });
 
         // show output channel
-        this.showFirstOutputChannel('Weave Search Results', jsonResult);
+        console.log(jsonDiscoveryResult);
+        this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
     }
 
-    private async searchWatson(searchThenable: Thenable<string>) : Promise<any> {
+    private async searchDiscovery(searchThenable: Thenable<string>) : Promise<any> {
 
         // initialize variables while waiting for results
         let watsonHelper = new WatsonHelper();
@@ -74,7 +89,7 @@ export class WeaveSearcher {
         let searchText = await searchThenable;
 
         // search watson
-        var watsonResponse = watsonHelper.searchWatson(searchText)
+        var watsonResponse = watsonHelper.searchDiscovery(searchText)
             .then((result) => { return result; })
             .catch((err) => {
                 window.showErrorMessage(`Failed to query watson services: ${err}`);
@@ -84,15 +99,44 @@ export class WeaveSearcher {
         return watsonResponse;
     }
 
-    public async parseJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
+    private async classifyWithNLC(searchThenable: Thenable<string>) : Promise<any> {
+        // initialize variables while waiting for results
+        let watsonHelper = new WatsonHelper();
+
+        // wait for results
+        let searchText = await searchThenable;
+        var NLCAnswer = watsonHelper.hitNLC(searchText)            
+            .then((result) => { return result; })
+            .catch((err) => {
+                window.showErrorMessage(`Failed to query watson services: ${err}`);
+                return null;
+            });
+        
+        return NLCAnswer;
+    }
+
+    public async parseDiscoveryJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
 
         // initialize stuff while waiting for the searchText and response
         let jsonHelper = new JSONHelper();
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
+        console.log(watsonResponse);
+        let jsonResult = jsonHelper.parseDiscoveryJSON(watsonResponse);
 
-        let jsonResult = jsonHelper.parseJSON(watsonResponse);
+        // return promise of json result
+        return jsonResult;
+    }
+
+    private async parseNLCJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
+
+        // initialize stuff while waiting for the searchText and response
+        let jsonHelper = new JSONHelper();
+
+        // wait for response
+        let watsonResponse = await watsonResponsePromise;
+        let jsonResult = jsonHelper.parseNLCJSON(watsonResponse);
 
         // return promise of json result
         return jsonResult;
