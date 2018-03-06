@@ -15,6 +15,14 @@ interface DiscoveryParsedResult<TValue> {
     [id: string]: TValue;
 }
 
+interface NLC_Credential {
+    auth: {
+        username: string,
+        password: string
+    },
+    classifier_id: string,
+}
+
 export class JSONHelper {
 
     public parseDiscoveryJSON(jsonChunk: Object): DiscoveryParsedResult<string> {
@@ -30,8 +38,13 @@ export class JSONHelper {
     public parseNLCJSON(jsonChunk: Object): string {
         var blob = JSON.stringify(<JSON> jsonChunk);
         var blobJSON: NLCJSONResult = JSON.parse(blob);
-        console.log("PARSED TOP CLASS: " + blobJSON.top_class);
         return blobJSON.top_class;
+    }
+
+    public getNLCCredential(jsonChunk: Object): NLC_Credential {
+        var blobby = JSON.stringify(<JSON> jsonChunk);
+        var blobbyJSON: NLC_Credential = JSON.parse(blobby);
+        return blobbyJSON;
     }
 
     dispose() { /* nothing to dispose */ }

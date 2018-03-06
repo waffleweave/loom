@@ -1,5 +1,6 @@
 
 import * as WebRequest from 'web-request';
+import { JSONHelper } from './jsonhelper';
 
 export class WatsonHelper {
 
@@ -18,14 +19,17 @@ export class WatsonHelper {
     }
 
     public hitNLC(text: string): Promise<WebRequest.Response<string>> {
-        var url = "https://gateway.watsonplatform.net/natural-language-classifier/api/v1/classifiers/" +
-        "8fc642x299-nlc-1245/classify?text=" + text;
-        var headers = this._buildNLCHeaders(text);
+        let jh = new JSONHelper();
+        var url = "https://gateway.watsonplatform.net/natural-language-classifier/api/v1/classifiers/";
+        var headers = this._buildNLCHeaders();
+        let classifier = (jh.getNLCCredential(headers).classifier_id);
+        url = url + classifier + "/classify?text=" + text;
+        console.log(url);
         var result = WebRequest.json<any>(url, headers);
         return result;
     }
 
-    private _buildNLCHeaders(query: string): any {
+    private _buildNLCHeaders(): any {
         var credential = require('../env/nlc_credential.json');
         return credential;
     }
