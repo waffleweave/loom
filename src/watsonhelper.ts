@@ -23,8 +23,7 @@ export class WatsonHelper {
         var url = "https://gateway.watsonplatform.net/natural-language-classifier/api/v1/classifiers/";
         var headers = this._buildNLCHeaders();
         let classifier = (jh.getNLCCredential(headers).classifier_id);
-        url = url + classifier + "/classify?text=" + text;
-        console.log(url);
+        url = url + classifier + `/classify?text='${text}'`;
         var result = WebRequest.json<any>(url, headers);
         return result;
     }
