@@ -115,7 +115,7 @@ export class WeaveSearcher {
         return NLCAnswer;
     }
 
-    private async parseDiscoveryJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
+    public async parseDiscoveryJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
 
         // initialize stuff while waiting for the searchText and response
         let jsonHelper = new JSONHelper();
