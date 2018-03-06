@@ -76,7 +76,6 @@ export class WeaveSearcher {
              });
 
         // show output channel
-        console.log(jsonDiscoveryResult);
         this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
     }
 
@@ -87,6 +86,9 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
+
+        console.log('----------------------------\nSearching Discovery With:');
+        console.log(searchText);
 
         // search watson
         var watsonResponse = watsonHelper.searchDiscovery(searchText)
@@ -105,6 +107,10 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
+        
+        console.log('----------------------------\nSearching NLC With:');
+        console.log(searchText);
+
         var NLCAnswer = watsonHelper.hitNLC(searchText)            
             .then((result) => { return result; })
             .catch((err) => {
@@ -122,7 +128,12 @@ export class WeaveSearcher {
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
-        console.log(watsonResponse);
+        // console.log("watsonResponse");
+        // console.log(watsonResponse);
+        if (watsonResponse.error) {
+            return new Promise<any>((resolve, reject) => reject(`Watson Discovery Error: ${watsonResponse.description}`));
+        }
+
         let jsonResult = jsonHelper.parseDiscoveryJSON(watsonResponse);
 
         // return promise of json result
@@ -136,6 +147,11 @@ export class WeaveSearcher {
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
+        // console.log("watsonResponse");
+        // console.log(watsonResponse);
+        if (watsonResponse.error) {
+            return new Promise<any>((resolve, reject) => reject(`Watson NLC Error: ${watsonResponse.description}`));
+        }
         let jsonResult = jsonHelper.parseNLCJSON(watsonResponse);
 
         // return promise of json result
@@ -181,6 +197,8 @@ export class WeaveSearcher {
 
         // wait for our required variables
         let jsonResult = await jsonResultPromise;
+
+        console.log(jsonResult);
 
         // this is ridiculous can someone fix this
         let firstKey;
