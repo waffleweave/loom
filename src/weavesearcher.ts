@@ -61,10 +61,8 @@ export class WeaveSearcher {
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
             });
 
-        var NLCPromise = new Promise<string>((resolve, reject) => resolve(jsonNLCResult));
-        
         // Now to discovery based on MLE 
-        var discoveryResponse = this.searchDiscovery(NLCPromise)
+        var discoveryResponse = this.searchDiscovery(jsonNLCResult)
             .catch((err) => { 
                 console.log(`\n!!! ERROR searching: ${err}`);
                 window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
