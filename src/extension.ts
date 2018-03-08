@@ -8,9 +8,13 @@ import { WeaveSearcher } from './weavesearcher';
 
 export function activate(context: ExtensionContext) {
     let weaveSearcher = new WeaveSearcher();
-    let disposable = commands.registerCommand('extension.sayHello', () => {
-        weaveSearcher.search();
+    let sayHelloCommand = commands.registerCommand('extension.sayHello', () => {
+        weaveSearcher.searchBar();
+    });
+    let searchThisCommand = commands.registerCommand('extension.searchThis', () => {
+        weaveSearcher.feelingLucky();
     });
     context.subscriptions.push(weaveSearcher);
-    context.subscriptions.push(disposable);
+    context.subscriptions.push(sayHelloCommand);
+    context.subscriptions.push(searchThisCommand);
 }

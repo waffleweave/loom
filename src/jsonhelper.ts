@@ -1,26 +1,50 @@
 import { json } from "web-request";
 
-interface WatsonJSONResult {
+interface DiscoveryJSONResult {
     results: Array<{
         extracted_metadata: { filename: string; }
         text: string;
     }>;
 }
 
-interface WatsonParsedResult<TValue> {
+interface NLCJSONResult {
+    top_class: string;
+}
+
+interface DiscoveryParsedResult<TValue> {
     [id: string]: TValue;
+}
+
+interface NLC_Credential {
+    auth: {
+        username: string,
+        password: string
+    },
+    classifier_id: string,
 }
 
 export class JSONHelper {
 
-    public parseJSON(jsonChunk: Object): WatsonParsedResult<string> {
+    public parseDiscoveryJSON(jsonChunk: Object): DiscoveryParsedResult<string> {
         var list = JSON.stringify(<JSON> jsonChunk);
-        var randoJson: WatsonJSONResult = JSON.parse(list);
-        var watsonParsed : WatsonParsedResult<string> = {};
+        var randoJson: DiscoveryJSONResult = JSON.parse(list);
+        var watsonParsed : DiscoveryParsedResult<string> = {};
         for (var response of randoJson.results) {
             watsonParsed[response.extracted_metadata.filename] = response.text;
         }
         return watsonParsed;
+    }
+
+    public parseNLCJSON(jsonChunk: Object): string {
+        var blob = JSON.stringify(<JSON> jsonChunk);
+        var blobJSON: NLCJSONResult = JSON.parse(blob);
+        return blobJSON.top_class;
+    }
+
+    public getNLCCredential(jsonChunk: Object): NLC_Credential {
+        var blobby = JSON.stringify(<JSON> jsonChunk);
+        var blobbyJSON: NLC_Credential = JSON.parse(blobby);
+        return blobbyJSON;
     }
 
     dispose() { /* nothing to dispose */ }

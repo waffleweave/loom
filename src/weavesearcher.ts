@@ -1,51 +1,199 @@
 
-import { window } from 'vscode';
+import { window, Selection, Position } from 'vscode';
 import { WatsonHelper } from './watsonhelper';
 import { JSONHelper } from './jsonhelper';
 
 export class WeaveSearcher {
 
-    public async search() {
-
-        var watsonHelper = new WatsonHelper();
-        var jsonHelper = new JSONHelper();
+    public async searchBar() {
 
         // prompt user for input
-        var searchText : string = await window.showInputBox();
+        var searchPromise = window.showInputBox();
 
-        // call watson with search query (async)
-        var watsonResponse = await watsonHelper.searchWatson(searchText)
+        // get response from watson
+        var watsonResponse = this.searchDiscovery(searchPromise)
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
+             });
+
+        // parse json response (or get default)
+        var jsonResult = this.parseDiscoveryJSON(watsonResponse)
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to parseJSON: ${err}`);
+            });
+
+        // show quick pick options
+        var selected = this.promptQuickPick(jsonResult)
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
+             });
+
+        // show output channel
+        this.showOutputChannel('Weave Search Results', selected, jsonResult);
+    }
+
+    //I've taken this over for the NLC->Discovery path
+    public async feelingLucky() {
+
+        // get current selection, and change it to select whole lines
+        var editor = window.activeTextEditor;
+        var selection = editor.selection;
+        var newSelection = new Selection(new Position(selection.start.line, 0), new Position(selection.end.line+1, 0));
+        editor.selection = newSelection;
+
+        // get current text of selected lines
+        var selectedText = editor.document.getText(editor.selection);
+        var selectedPromise = new Promise<string>((resolve, reject) => resolve(selectedText));
+        
+        //Feed it to NLC
+        var NLCResponse = this.classifyWithNLC(selectedPromise)
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to classify with NLC: ${err}`);
+            });
+
+        var jsonNLCResult = this.parseNLCJSON(NLCResponse)
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to parseJSON: ${err}`);
+            });
+
+        // Now to discovery based on MLE 
+        var discoveryResponse = this.searchDiscovery(jsonNLCResult)
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
+            });
+
+        // parse json response (or get default)
+        var jsonDiscoveryResult = this.parseDiscoveryJSON(discoveryResponse)
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to parseJSON: ${err}`);
+             });
+
+        // show output channel
+        this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
+    }
+
+    private async searchDiscovery(searchThenable: Thenable<string>) : Promise<any> {
+
+        // initialize variables while waiting for results
+        let watsonHelper = new WatsonHelper();
+
+        // wait for results
+        let searchText = await searchThenable;
+
+        // search watson
+        var watsonResponse = watsonHelper.searchDiscovery(searchText)
             .then((result) => { return result; })
             .catch((err) => {
-                // window.showErrorMessage(`Failed to query watson services: ${err}`);
+                window.showErrorMessage(`Failed to query watson services: ${err}`);
                 return null;
             });
 
-        // setup local stuff while query is running
-        var ochannel = window.createOutputChannel('watson_channel');
+        return watsonResponse;
+    }
 
-        // parse response into key-value pair dict
-        var jsonResult;
-        if (searchText.includes("help")) {
-            jsonResult = getDefaultResponse(searchText);
-        }
-        else {
-            jsonResult = jsonHelper.parseJSON(watsonResponse);
-        }
+    private async classifyWithNLC(searchThenable: Thenable<string>) : Promise<any> {
+        // initialize variables while waiting for results
+        let watsonHelper = new WatsonHelper();
+
+        // wait for results
+        let searchText = await searchThenable;
+
+        var NLCAnswer = watsonHelper.hitNLC(searchText)            
+            .then((result) => { return result; })
+            .catch((err) => {
+                window.showErrorMessage(`Failed to query watson services: ${err}`);
+                return null;
+            });
         
+        return NLCAnswer;
+    }
+
+    public async parseDiscoveryJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
+
+        // initialize stuff while waiting for the searchText and response
+        let jsonHelper = new JSONHelper();
+
+        // wait for response
+        let watsonResponse = await watsonResponsePromise;
+        if (watsonResponse.error) {
+            return new Promise<any>((resolve, reject) => reject(`Watson Discovery Error: ${watsonResponse.description}`));
+        }
+
+        let jsonResult = jsonHelper.parseDiscoveryJSON(watsonResponse);
+
+        // return promise of json result
+        return jsonResult;
+    }
+
+    private async parseNLCJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
+
+        // initialize stuff while waiting for the searchText and response
+        let jsonHelper = new JSONHelper();
+
+        // wait for response
+        let watsonResponse = await watsonResponsePromise;
+        if (watsonResponse.error) {
+            return new Promise<any>((resolve, reject) => reject(`Watson NLC Error: ${watsonResponse.description}`));
+        }
+        let jsonResult = jsonHelper.parseNLCJSON(watsonResponse);
+
+        // return promise of json result
+        return jsonResult;
+    }
+
+    private async promptQuickPick(jsonPromise: Thenable<any>) : Promise<any> {
+        
+        // wait for required variable
+        let jsonResult = await jsonPromise;
+
         // extract keys (filenames)
         var keys = [];
         for (var r in jsonResult) {
             keys.push(r);
         }
 
-        // wait for user to select desired file
-        var selected = await window.showQuickPick(keys);
+        // return promise of selection
+        return window.showQuickPick(keys);
+    }
+
+    private async showOutputChannel(outputName: string, selectedPromise: Thenable<any>, jsonResultPromise: Thenable<any>) : Promise<boolean> {
         
+        // setup local stuff while waiting for variables
+        var ochannel = window.createOutputChannel(outputName);
+
+        // wait for our required variables
+        let jsonResult = await jsonResultPromise;
+        let selected = await selectedPromise;
+
         // show corresponding result from selection
         ochannel.appendLine(`Results from chosen: ${selected}`);
         ochannel.append(jsonResult[selected]);
         ochannel.show();
+
+        return true;
+    }
+
+    private async showFirstOutputChannel(outputName: string, jsonResultPromise: Thenable<any>) : Promise<boolean> {
+        
+        // setup local stuff while waiting for variables
+        var ochannel = window.createOutputChannel(outputName);
+
+        // wait for our required variables
+        let jsonResult = await jsonResultPromise;
+
+        // this is ridiculous can someone fix this
+        let firstKey;
+        for (var r in jsonResult){
+            firstKey = r;
+            break;
+        }
+
+        // show corresponding result from selection
+        ochannel.appendLine(`Lucky Weave Results:`);
+        ochannel.append(jsonResult[firstKey]);
+        ochannel.show();
+
+        return true;
     }
 
     dispose() { }
