@@ -13,21 +13,18 @@ export class WeaveSearcher {
         // get response from watson
         var watsonResponse = this.searchDiscovery(searchPromise)
             .catch((err) => { 
-                console.log(`\n!!! ERROR searching: ${err}`);
                 window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
              });
 
         // parse json response (or get default)
         var jsonResult = this.parseDiscoveryJSON(watsonResponse)
             .catch((err) => { 
-                console.log(`\n!!! ERROR parsing: ${err}`);
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
             });
 
         // show quick pick options
         var selected = this.promptQuickPick(jsonResult)
             .catch((err) => { 
-                console.log(`\n!!! ERROR showing quick pick: ${err}`);
                 window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
              });
 
@@ -51,27 +48,23 @@ export class WeaveSearcher {
         //Feed it to NLC
         var NLCResponse = this.classifyWithNLC(selectedPromise)
             .catch((err) => { 
-                console.log(`\n!!! ERROR searching: ${err}`);
                 window.showErrorMessage(`Failed to classify with NLC: ${err}`);
             });
 
         var jsonNLCResult = this.parseNLCJSON(NLCResponse)
             .catch((err) => { 
-                console.log(`\n!!! ERROR parsing: ${err}`);
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
             });
 
         // Now to discovery based on MLE 
         var discoveryResponse = this.searchDiscovery(jsonNLCResult)
             .catch((err) => { 
-                console.log(`\n!!! ERROR searching: ${err}`);
                 window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
             });
 
         // parse json response (or get default)
         var jsonDiscoveryResult = this.parseDiscoveryJSON(discoveryResponse)
             .catch((err) => { 
-                console.log(`\n!!! ERROR parsing: ${err}`);
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
              });
 
@@ -86,9 +79,6 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
-
-        console.log('----------------------------\nSearching Discovery With:');
-        console.log(searchText);
 
         // search watson
         var watsonResponse = watsonHelper.searchDiscovery(searchText)
@@ -107,9 +97,6 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
-        
-        console.log('----------------------------\nSearching NLC With:');
-        console.log(searchText);
 
         var NLCAnswer = watsonHelper.hitNLC(searchText)            
             .then((result) => { return result; })
@@ -128,8 +115,6 @@ export class WeaveSearcher {
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
-        // console.log("watsonResponse");
-        // console.log(watsonResponse);
         if (watsonResponse.error) {
             return new Promise<any>((resolve, reject) => reject(`Watson Discovery Error: ${watsonResponse.description}`));
         }
@@ -147,8 +132,6 @@ export class WeaveSearcher {
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
-        // console.log("watsonResponse");
-        // console.log(watsonResponse);
         if (watsonResponse.error) {
             return new Promise<any>((resolve, reject) => reject(`Watson NLC Error: ${watsonResponse.description}`));
         }
@@ -197,8 +180,6 @@ export class WeaveSearcher {
 
         // wait for our required variables
         let jsonResult = await jsonResultPromise;
-
-        console.log(jsonResult);
 
         // this is ridiculous can someone fix this
         let firstKey;
