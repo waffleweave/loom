@@ -9,6 +9,11 @@ export class DocumentHelper {
         } 
         return true;
     }
+
+    public parse1Tab(document: string): string {
+        var realDoc = document.substring(document.indexOf("\n") + 1);
+        return realDoc;
+    }
     
     public parseDocument(document: string) {
 
