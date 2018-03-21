@@ -4,6 +4,7 @@ interface DiscoveryJSONResult {
     results: Array<{
         extracted_metadata: { filename: string; }
         text: string;
+        html: string;
     }>;
 }
 
@@ -31,6 +32,16 @@ export class JSONHelper {
         var watsonParsed : DiscoveryParsedResult<string> = {};
         for (var response of randoJson.results) {
             watsonParsed[response.extracted_metadata.filename] = response.text;
+        }
+        return watsonParsed;
+    }
+
+    public parseDiscoveryJSONToHTML(jsonChunk: Object): DiscoveryParsedResult<string> {
+        var list = JSON.stringify(<JSON> jsonChunk);
+        var randoJson: DiscoveryJSONResult = JSON.parse(list);
+        var watsonParsed : DiscoveryParsedResult<string> = {};
+        for (var response of randoJson.results) {
+            watsonParsed[response.extracted_metadata.filename] = response.html;
         }
         return watsonParsed;
     }

@@ -1,5 +1,5 @@
 
-import { window, Selection, Position } from 'vscode';
+import { window, commands, Uri, TextDocumentContentProvider, Selection, Position } from 'vscode';
 import { WatsonHelper } from './watsonhelper';
 import { JSONHelper } from './jsonhelper';
 
@@ -17,7 +17,7 @@ export class WeaveSearcher {
              });
 
         // parse json response (or get default)
-        var jsonResult = this.parseDiscoveryJSON(watsonResponse)
+        var jsonResult = this.parseDiscoveryJSON(watsonResponse, true)
             .catch((err) => { 
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
             });
@@ -29,7 +29,9 @@ export class WeaveSearcher {
              });
 
         // show output channel
-        this.showOutputChannel('Weave Search Results', selected, jsonResult);
+        // this.showOutputChannel('Weave Search Results', selected, jsonResult);
+        // this.showHTML(selected, jsonResult);
+        this.showAllResults(jsonResult);
     }
 
     //I've taken this over for the NLC->Discovery path
@@ -80,6 +82,8 @@ export class WeaveSearcher {
         // wait for results
         let searchText = await searchThenable;
 
+        var defSingle = getSingleResponse(searchText);
+
         // search watson
         var watsonResponse = watsonHelper.searchDiscovery(searchText)
             .then((result) => { return result; })
@@ -108,18 +112,24 @@ export class WeaveSearcher {
         return NLCAnswer;
     }
 
-    public async parseDiscoveryJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
+    public async parseDiscoveryJSON(watsonResponsePromise: Thenable<any>, html: boolean = false) : Promise<any> {
 
         // initialize stuff while waiting for the searchText and response
         let jsonHelper = new JSONHelper();
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
+
         if (watsonResponse.error) {
             return new Promise<any>((resolve, reject) => reject(`Watson Discovery Error: ${watsonResponse.description}`));
         }
 
-        let jsonResult = jsonHelper.parseDiscoveryJSON(watsonResponse);
+        var jsonResult: any;
+        if (html) {
+            jsonResult = jsonHelper.parseDiscoveryJSONToHTML(watsonResponse);
+        } else {
+            jsonResult = jsonHelper.parseDiscoveryJSON(watsonResponse);
+        }
 
         // return promise of json result
         return jsonResult;
@@ -154,6 +164,41 @@ export class WeaveSearcher {
 
         // return promise of selection
         return window.showQuickPick(keys);
+    }
+
+    private async showHTML(selectedPromise: Thenable<any>, jsonResultPromise: Thenable<any>) : Promise<boolean> {
+
+        let jsonResult = await jsonResultPromise;
+        let selected = await selectedPromise;
+
+        var url = require('path').resolve(__dirname, 'temp_show_description.html');
+        var fs = require('fs');
+        fs.writeFile(url, jsonResult[selected], (err) => {
+            if (err) window.showErrorMessage(`FileWrite Error: ${err}`);
+        });
+        var uri = Uri.file(url);
+        let success = await commands.executeCommand('vscode.previewHtml', uri, 2, 'Description')
+                        .then((ret) => {return ret;},
+                            (err) => { 
+                                window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
+                            });
+
+        return success == true;
+    }
+
+    private async showAllResults(jsonResultPromise: Thenable<any>): Promise<boolean> {
+        var jsonResult = await jsonResultPromise;
+        var result:boolean = true; 
+        var count = 0;
+        for (var jr in jsonResult)
+        {
+            var url = require('path').resolve(__dirname, `temp_show_${count}.html`);
+            require('fs').writeFile(url, jsonResult[jr], (err) => {if (err) window.showErrorMessage(`FileWrite Error: ${err}`)});
+            result = result && <boolean>await commands.executeCommand('vscode.previewHtml', Uri.file(url), 2, `Result ${count}`)
+                                        .then((ret) => {return ret;}, (err) => {window.showErrorMessage(`Failed to preview: ${err}`)});
+            count += 1;
+        }
+        return result;
     }
 
     private async showOutputChannel(outputName: string, selectedPromise: Thenable<any>, jsonResultPromise: Thenable<any>) : Promise<boolean> {
@@ -218,4 +263,17 @@ function getDefaultResponse(query: string) {
     }
 
     return result
+}
+
+function getSingleResponse(fromNLC: string) {
+
+    var result = {};
+    if (fromNLC == "Heapsort") {
+        result["HeapsortPDC_local"] = "Heapsort Pseudo-Code\n\nMax-Heapify(A, i)\n 1 I = Left(i)\n 2 r = Right(i)\n 3 if I <= A.heap-size and A[l] > A[i]\n 4 largest = j\n 5 else largest = i\n 6 if r <= A.heap-size and A[r] > A[largest]\n 7 largest = r\n 8 if largest != i\n 9 exchange A[i] wth A[largest]\n 10 Max-Heapify(A, largest)\n\nBuild-Max-Heap(A)\n 1 A.heap-size = A.length\n 2 for I = [A.length / 2] downto 1\n 3 Max-Heapify(A, i)\n\nHeapsort(A)\n 1 Build-Max-Heap(A)\n 2 for I = A.length downto 2\n 3 exchange A[1] with A[j]\n 4 A.heap-size = A.heap-size – 1\n 5 Max-Heapify(A, 1)";
+    }
+    else {
+        return null;
+    }
+
+    return result;
 }
