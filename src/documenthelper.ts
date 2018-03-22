@@ -16,7 +16,9 @@ export class DocumentHelper {
     }
 
     public Parse2TabDescription(document: string): string {
-        var start = document.indexOf("Description");
+        var first = document.indexOf("Description");
+        var firstPart = document.substring(0,first);
+        var start = firstPart.lastIndexOf("\n");
         var end = document.indexOf("Pseudocode");
         var stephen = document.substring(start,end);
         stephen = stephen.substring(0,stephen.lastIndexOf("\n"));
@@ -24,7 +26,9 @@ export class DocumentHelper {
     }
 
     public Parse2TabPseudo(document: string): string {
-        var start = document.indexOf("Pseudocode");
+        var first = document.indexOf("Pseudocode");
+        var firstPart = document.substring(0,first);
+        var start = firstPart.lastIndexOf("\n");
         var end = document.indexOf("Code");
         var stephen = document.substring(start,end);
         stephen = stephen.substring(0,stephen.lastIndexOf("\n"));
@@ -32,7 +36,9 @@ export class DocumentHelper {
     }
 
     public Parse2TabRealCode(document: string): string {
-        var start = document.indexOf("Code");
+        var first = document.indexOf("Code");
+        var firstPart = document.substring(0,first);
+        var start = firstPart.lastIndexOf("\n");
         var stephen = document.substring(start);
         return stephen;
     }
