@@ -3,7 +3,9 @@ export class DocumentHelper {
 
     //If 2 tabs are needed, return true
     public parseTabs(document: string): boolean {
-        var caribli = document.split('\n', 1)[0];
+        var first = document.indexOf("id=\"content\"");
+        var nopebad = document.substr(first);
+        var caribli = nopebad.split('\n', 2)[1];
         if (caribli.search('2') == -1) {
             return false;
         } 

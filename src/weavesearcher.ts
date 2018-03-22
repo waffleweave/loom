@@ -2,6 +2,7 @@
 import { window, commands, Uri, TextDocumentContentProvider, Selection, Position } from 'vscode';
 import { WatsonHelper } from './watsonhelper';
 import { JSONHelper } from './jsonhelper';
+import { DocumentHelper } from './documenthelper';
 
 export class WeaveSearcher {
 
@@ -30,8 +31,8 @@ export class WeaveSearcher {
 
         // show output channel
         // this.showOutputChannel('Weave Search Results', selected, jsonResult);
-        // this.showHTML(selected, jsonResult);
-        this.showAllResults(jsonResult);
+        this.showHTML(selected, jsonResult);
+        // this.showAllResults(jsonResult);
     }
 
     //I've taken this over for the NLC->Discovery path
@@ -168,22 +169,65 @@ export class WeaveSearcher {
 
     private async showHTML(selectedPromise: Thenable<any>, jsonResultPromise: Thenable<any>) : Promise<boolean> {
 
+        let dh = new DocumentHelper();
+
+        var url_1 = require('path').resolve(__dirname, 'temp_show_onetab.html');
+        var url_desc = require('path').resolve(__dirname, 'temp_show_description.html');
+        var url_pseu = require('path').resolve(__dirname, 'temp_show_pseudocode.html');
+        var url_code = require('path').resolve(__dirname, 'temp_show_code.html');
+        var fs = require('fs');
+
         let jsonResult = await jsonResultPromise;
         let selected = await selectedPromise;
 
-        var url = require('path').resolve(__dirname, 'temp_show_description.html');
-        var fs = require('fs');
-        fs.writeFile(url, jsonResult[selected], (err) => {
-            if (err) window.showErrorMessage(`FileWrite Error: ${err}`);
-        });
-        var uri = Uri.file(url);
-        let success = await commands.executeCommand('vscode.previewHtml', uri, 2, 'Description')
-                        .then((ret) => {return ret;},
-                            (err) => { 
-                                window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
-                            });
+        var html_full = jsonResult[selected]; 
+        let twotab = dh.parseTabs(html_full);
 
-        return success == true;
+        if (twotab)
+        {
+            let desc_html = dh.Parse2TabDescription(html_full);
+            let pseu_html = dh.Parse2TabPseudo(html_full);
+            let code_html = dh.Parse2TabRealCode(html_full);
+
+            fs.writeFile(url_desc, desc_html, (err) => {
+                if (err) window.showErrorMessage(`FileWriteDesc Error: ${err}`);
+            });
+            fs.writeFile(url_pseu, pseu_html, (err) => {
+                if (err) window.showErrorMessage(`FileWritePseu Error: ${err}`);
+            });
+            fs.writeFile(url_code, code_html, (err) => {
+                if (err) window.showErrorMessage(`FileWriteCode Error: ${err}`);
+            });
+
+            let uri_desc = Uri.file(url_desc);
+            let uri_pseu = Uri.file(url_pseu);
+            let uri_code = Uri.file(url_code);
+
+            await commands.executeCommand('vscode.previewHtml', uri_code, 2, 'Sample Code')
+                                    .then((ret) => {return ret;},
+                                        (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});
+            await commands.executeCommand('vscode.previewHtml', uri_pseu, 2, 'Pseudo Code')
+                                    .then((ret) => {return ret;},
+                                        (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});
+            await commands.executeCommand('vscode.previewHtml', uri_desc, 2, 'Description')
+                                    .then((ret) => {return ret;},
+                                        (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});;
+        } else {
+            
+            let html = dh.parse1Tab(html_full);
+
+            fs.writeFile(url_1, html, (err) => {
+                if (err) window.showErrorMessage(`FileWrite1Tab Error: ${err}`);
+            });
+
+            let uri = Uri.file(url_1);
+
+            await commands.executeCommand('vscode.previewHtml', uri, 2, 'LOOM Result')
+                                    .then((ret) => {return ret;},
+                                        (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});
+        }
+
+        return true;
     }
 
     private async showAllResults(jsonResultPromise: Thenable<any>): Promise<boolean> {
