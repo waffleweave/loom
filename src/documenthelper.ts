@@ -14,9 +14,19 @@ export class DocumentHelper {
         var realDoc = document.substring(document.indexOf("\n") + 1);
         return realDoc;
     }
-    
-    public parseDocument(document: string) {
 
+    public Parse1TabDescription(document: string): string {
+        var start = document.indexOf("Description");
+        var end = document.indexOf("Pseudocode");
+        var stephen = document.substring(start,end);
+        stephen = stephen.substring(0,stephen.lastIndexOf("\n"));
+        return stephen;
+    }
+
+    public Parse1TabPseudo(document: string): string {
+        var start = document.indexOf("Pseudocode");
+        var stephen = document.substring(start);
+        return stephen;
     }
 
 }
