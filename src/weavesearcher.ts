@@ -1,5 +1,5 @@
 
-import { window, commands, Uri, TextDocumentContentProvider, Selection, Position } from 'vscode';
+import { window, commands, Uri, TextDocumentContentProvider, Selection, Position, QuickPickOptions } from 'vscode';
 import { WatsonHelper } from './watsonhelper';
 import { JSONHelper } from './jsonhelper';
 import { DocumentHelper } from './documenthelper';
@@ -24,7 +24,10 @@ export class WeaveSearcher {
             });
 
         // show quick pick options
-        var selected = this.promptQuickPick(jsonResult)
+        let q = <QuickPickOptions> {
+            placeHolder : "Weave Search Results"
+        };
+        var selected = this.promptQuickPick(jsonResult, q)
             .catch((err) => { 
                 window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
              });
@@ -152,7 +155,7 @@ export class WeaveSearcher {
         return jsonResult;
     }
 
-    private async promptQuickPick(jsonPromise: Thenable<any>) : Promise<any> {
+    private async promptQuickPick(jsonPromise: Thenable<any>, q: QuickPickOptions) : Promise<any> {
         
         // wait for required variable
         let jsonResult = await jsonPromise;
@@ -164,7 +167,7 @@ export class WeaveSearcher {
         }
 
         // return promise of selection
-        return window.showQuickPick(keys);
+        return window.showQuickPick(keys,q);
     }
 
     private async showHTML(selectedPromise: Thenable<any>, jsonResultPromise: Thenable<any>) : Promise<boolean> {
