@@ -69,13 +69,14 @@ export class WeaveSearcher {
             });
 
         // parse json response (or get default)
-        var jsonDiscoveryResult = this.parseDiscoveryJSON(discoveryResponse)
+        var jsonDiscoveryResult = this.parseDiscoveryJSON(discoveryResponse, true)
             .catch((err) => { 
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
              });
 
         // show output channel
-        this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
+        // this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
+        this.showHTML(null, jsonDiscoveryResult);
     }
 
     private async searchDiscovery(searchThenable: Thenable<string>) : Promise<any> {
@@ -181,7 +182,21 @@ export class WeaveSearcher {
         var fs = require('fs');
 
         let jsonResult = await jsonResultPromise;
-        let selected = await selectedPromise;
+        var selected: string;
+
+        if (selectedPromise != null)
+        {
+            selected = await selectedPromise;
+        } 
+        else {
+            // should this be based on top score or is first result (in dictionary) okay
+            for (var r in jsonResult){
+                selected = r;
+                break;
+            }   
+        }
+
+        console.log(selected);
 
         var html_full = jsonResult[selected]; 
         let twotab = dh.parseTabs(html_full);
