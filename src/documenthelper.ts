@@ -22,6 +22,9 @@ export class DocumentHelper {
         var firstPart = document.substring(0,first);
         var start = firstPart.lastIndexOf("\n");
         var end = document.indexOf("Pseudocode");
+        if (end == -1) {
+            end = document.indexOf("Pseudo-code");
+        }
         var stephen = document.substring(start,end);
         stephen = stephen.substring(0,stephen.lastIndexOf("\n"));
         return stephen;
@@ -29,6 +32,9 @@ export class DocumentHelper {
 
     public Parse2TabPseudo(document: string): string {
         var first = document.indexOf("Pseudocode");
+        if (first == -1) {
+            first = document.indexOf("Pseudo-code");
+        }
         var firstPart = document.substring(0,first);
         var start = firstPart.lastIndexOf("\n");
         var end = document.indexOf("Code");

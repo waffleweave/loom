@@ -37,16 +37,20 @@
             }
         ],
         "menus": {
-            "editor/context": [{
-                "when": "editorHasSelection",
-                "command": "extension.searchThis",
-                "group": "navigation"
-            }],
-            "editor/title": [{
-                "when": "resourceLangId == python",
-                "command": "extension.sayHello",
-                "group": "navigation"
-            }]
+            "editor/context": [
+                {
+                    "when": "editorHasSelection",
+                    "command": "extension.searchThis",
+                    "group": "navigation"
+                }
+            ],
+            "editor/title": [
+                {
+                    "when": "resourceLangId == python",
+                    "command": "extension.sayHello",
+                    "group": "navigation"
+                }
+            ]
         }
     },
     "scripts": {
