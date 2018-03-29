@@ -86,6 +86,9 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
+        if (searchText == null) {
+            return null;
+        }
         if (searchText.length < 2) {
             window.showErrorMessage(`Failed to query watson services: query too short`);
             return null;
@@ -135,6 +138,9 @@ export class WeaveSearcher {
         // wait for response
         let watsonResponse = await watsonResponsePromise;
 
+        if (watsonResponse == null) {
+            return null;
+        }
         if (watsonResponse.error) {
             return new Promise<any>((resolve, reject) => reject(`Watson Discovery Error: ${watsonResponse.description}`));
         }
@@ -157,6 +163,9 @@ export class WeaveSearcher {
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
+        if (watsonResponse == null) {
+            return null;
+        }
         if (watsonResponse.error) {
             return new Promise<any>((resolve, reject) => reject(`Watson NLC Error: ${watsonResponse.description}`));
         }
