@@ -86,9 +86,13 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
-
-        var defSingle = getSingleResponse(searchText);
-
+        if (searchText.length < 2) {
+            window.showErrorMessage(`Failed to query watson services: query too short`);
+            return null;
+        } else if (searchText.length > 200) {
+            window.showErrorMessage(`Failed to query watson services: query too long`);
+            return null;
+        }
         // search watson
         var watsonResponse = watsonHelper.searchDiscovery(searchText)
             .then((result) => { return result; })
@@ -106,7 +110,13 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
-
+        if (searchText.length < 2) {
+            window.showErrorMessage(`Failed to query watson services: query too short`);
+            return null;
+        } else if (searchText.length > 1000) {
+            window.showErrorMessage(`Failed to query watson services: query too long`);
+            return null;
+        }
         var NLCAnswer = watsonHelper.hitNLC(searchText)            
             .then((result) => { return result; })
             .catch((err) => {
@@ -325,17 +335,4 @@ function getDefaultResponse(query: string) {
     }
 
     return result
-}
-
-function getSingleResponse(fromNLC: string) {
-
-    var result = {};
-    if (fromNLC == "Heapsort") {
-        result["HeapsortPDC_local"] = "Heapsort Pseudo-Code\n\nMax-Heapify(A, i)\n 1 I = Left(i)\n 2 r = Right(i)\n 3 if I <= A.heap-size and A[l] > A[i]\n 4 largest = j\n 5 else largest = i\n 6 if r <= A.heap-size and A[r] > A[largest]\n 7 largest = r\n 8 if largest != i\n 9 exchange A[i] wth A[largest]\n 10 Max-Heapify(A, largest)\n\nBuild-Max-Heap(A)\n 1 A.heap-size = A.length\n 2 for I = [A.length / 2] downto 1\n 3 Max-Heapify(A, i)\n\nHeapsort(A)\n 1 Build-Max-Heap(A)\n 2 for I = A.length downto 2\n 3 exchange A[1] with A[j]\n 4 A.heap-size = A.heap-size – 1\n 5 Max-Heapify(A, 1)";
-    }
-    else {
-        return null;
-    }
-
-    return result;
 }
