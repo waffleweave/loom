@@ -83,7 +83,7 @@ export class WeaveSearcher {
                 window.showErrorMessage(`Failed to classify with NLC: ${err}`);
             });
 
-        var jsonNLCResult = this.parseNLCJSON(NLCResponse)
+        var jsonNLCResult = this.parseNLCJSONforSelection(NLCResponse)
             .then((res) => {
                 console.log('_____________________________\nNLC Parse Results:');
                 console.log(res);
@@ -93,8 +93,22 @@ export class WeaveSearcher {
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
             });
 
+        // show quick pick options
+        let q = <QuickPickOptions> {
+            placeHolder : "Weave Search Results"
+        };
+        var selected = this.promptQuickPick(jsonNLCResult, q)
+            .then((res) => {
+                console.log('_____________________________\nQuick Pick Selection:');
+                console.log(res);
+                return res;
+            })
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
+            });
+
         // Now to discovery based on MLE 
-        var discoveryResponse = this.searchDiscovery(jsonNLCResult)
+        var discoveryResponse = this.searchDiscovery(selected)
             .then((res) => {
                 console.log('_____________________________\nDiscovery Search Results:');
                 console.log(res);
@@ -115,23 +129,9 @@ export class WeaveSearcher {
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
              });
 
-        // show quick pick options
-        let q = <QuickPickOptions> {
-            placeHolder : "Weave Search Results"
-        };
-        var selected = this.promptQuickPick(jsonDiscoveryResult, q)
-            .then((res) => {
-                console.log('_____________________________\nQuick Pick Selection:');
-                console.log(res);
-                return res;
-            })
-            .catch((err) => { 
-                window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
-            });
-
         // show output channel
         // this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
-        this.showHTML(selected, jsonDiscoveryResult);
+        this.showHTML(null, jsonDiscoveryResult);
     }
 
     private async searchDiscovery(searchThenable: Thenable<string>) : Promise<any> {
@@ -225,6 +225,25 @@ export class WeaveSearcher {
             return new Promise<any>((resolve, reject) => reject(`Watson NLC Error: ${watsonResponse.description}`));
         }
         let jsonResult = jsonHelper.parseNLCJSON(watsonResponse);
+
+        // return promise of json result
+        return jsonResult;
+    }
+
+    private async parseNLCJSONforSelection(watsonResponsePromise: Thenable<any>) : Promise<any> {
+
+        // initialize stuff while waiting for the searchText and response
+        let jsonHelper = new JSONHelper();
+
+        // wait for response
+        let watsonResponse = await watsonResponsePromise;
+        if (watsonResponse == null) {
+            return null;
+        }
+        if (watsonResponse.error) {
+            return new Promise<any>((resolve, reject) => reject(`Watson NLC Error: ${watsonResponse.description}`));
+        }
+        let jsonResult = jsonHelper.parseNLCForSelection(watsonResponse);
 
         // return promise of json result
         return jsonResult;

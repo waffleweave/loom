@@ -10,6 +10,10 @@ interface DiscoveryJSONResult {
 
 interface NLCJSONResult {
     top_class: string;
+    classes: Array<{
+        class_name: string;
+        confidence: number;
+    }>;
 }
 
 interface DiscoveryParsedResult<TValue> {
@@ -50,6 +54,16 @@ export class JSONHelper {
         var blob = JSON.stringify(<JSON> jsonChunk);
         var blobJSON: NLCJSONResult = JSON.parse(blob);
         return blobJSON.top_class;
+    }
+
+    public parseNLCForSelection(jsonChunk: Object): DiscoveryParsedResult<number> {
+        var blob = JSON.stringify(<JSON> jsonChunk);
+        var blobJSON: NLCJSONResult = JSON.parse(blob);
+        var result = {};
+        blobJSON.classes.forEach(res => {
+            result[res.class_name] = res.confidence;
+        });
+        return result;
     }
 
     public getNLCCredential(jsonChunk: Object): NLC_Credential {
