@@ -262,6 +262,10 @@ export class WeaveSearcher {
         // wait for required variable
         let jsonResult = await jsonPromise;
 
+        if (jsonResult == null) {
+            return null;
+        }
+
         // extract keys (filenames)
         var keys = [];
         if (researchable) {
