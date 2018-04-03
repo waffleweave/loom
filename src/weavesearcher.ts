@@ -9,16 +9,34 @@ export class WeaveSearcher {
     public async searchBar() {
 
         // prompt user for input
-        var searchPromise = window.showInputBox();
+        var searchPromise = window.showInputBox()
+            .then((res) => { 
+                    console.log('_____________________________\ninput box results:');
+                    console.log(res);
+                    return res; 
+                },
+                (err) => {
+                    window.showErrorMessage(`Failed to get input box: ${err}`);    
+            });
 
         // get response from watson
         var watsonResponse = this.searchDiscovery(searchPromise)
+            .then((res) => {
+                console.log('_____________________________\nDiscovery Search Results:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
-             });
+            });
 
         // parse json response (or get default)
         var jsonResult = this.parseDiscoveryJSON(watsonResponse, true)
+            .then((res) => {
+                console.log('_____________________________\nDiscovery Parse Results:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
             });
@@ -28,14 +46,17 @@ export class WeaveSearcher {
             placeHolder : "Weave Search Results"
         };
         var selected = this.promptQuickPick(jsonResult, q)
+            .then((res) => {
+                console.log('_____________________________\nQuick Pick Selection:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
              });
 
-        // show output channel
-        // this.showOutputChannel('Weave Search Results', selected, jsonResult);
+        // show html pages
         this.showHTML(selected, jsonResult);
-        // this.showAllResults(jsonResult);
     }
 
     //I've taken this over for the NLC->Discovery path
@@ -53,30 +74,64 @@ export class WeaveSearcher {
         
         //Feed it to NLC
         var NLCResponse = this.classifyWithNLC(selectedPromise)
+            .then((res) => {
+                console.log('_____________________________\nNLC response:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to classify with NLC: ${err}`);
             });
 
         var jsonNLCResult = this.parseNLCJSON(NLCResponse)
+            .then((res) => {
+                console.log('_____________________________\nNLC Parse Results:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
             });
 
         // Now to discovery based on MLE 
         var discoveryResponse = this.searchDiscovery(jsonNLCResult)
+            .then((res) => {
+                console.log('_____________________________\nDiscovery Search Results:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
             });
 
         // parse json response (or get default)
         var jsonDiscoveryResult = this.parseDiscoveryJSON(discoveryResponse, true)
+            .then((res) => {
+                console.log('_____________________________\nDiscovery JSON Parse Result:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
              });
 
+        // show quick pick options
+        let q = <QuickPickOptions> {
+            placeHolder : "Weave Search Results"
+        };
+        var selected = this.promptQuickPick(jsonDiscoveryResult, q)
+            .then((res) => {
+                console.log('_____________________________\nQuick Pick Selection:');
+                console.log(res);
+                return res;
+            })
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
+            });
+
         // show output channel
         // this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
-        this.showHTML(null, jsonDiscoveryResult);
+        this.showHTML(selected, jsonDiscoveryResult);
     }
 
     private async searchDiscovery(searchThenable: Thenable<string>) : Promise<any> {
@@ -215,8 +270,6 @@ export class WeaveSearcher {
             }   
         }
 
-        console.log(selected);
-
         var html_full = jsonResult[selected]; 
         let twotab = dh.parseTabs(html_full);
 
@@ -259,7 +312,7 @@ export class WeaveSearcher {
 
             let uri = Uri.file(url_1);
 
-            await commands.executeCommand('vscode.previewHtml', uri, 2, 'LOOM Result')
+            await commands.executeCommand('vscode.previewHtml', uri, 2, 'Selected Result')
                                     .then((ret) => {return ret;},
                                         (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});
         }
