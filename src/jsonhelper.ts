@@ -45,7 +45,10 @@ export class JSONHelper {
         var randoJson: DiscoveryJSONResult = JSON.parse(list);
         var watsonParsed : DiscoveryParsedResult<string> = {};
         for (var response of randoJson.results) {
-            watsonParsed[response.extracted_metadata.filename] = response.html;
+            let tname = response.extracted_metadata.filename;
+            tname = tname.substring(0, tname.length-5);
+            tname = tname.charAt(0).toUpperCase() + tname.slice(1);
+            watsonParsed[tname] = response.html;
         }
         return watsonParsed;
     }
