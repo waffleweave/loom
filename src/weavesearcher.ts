@@ -8,52 +8,60 @@ export class WeaveSearcher {
 
     public async searchBar() {
 
-        // prompt user for input
-        var searchPromise = window.showInputBox()
-            .then((res) => { 
-                    console.log('_____________________________\ninput box results:');
+        var repeat = true;
+        while (repeat) {
+            // prompt user for input
+            var searchPromise = window.showInputBox()
+                .then((res) => { 
+                        console.log('_____________________________\ninput box results:');
+                        console.log(res);
+                        return res; 
+                    },
+                    (err) => {
+                        window.showErrorMessage(`Failed to get input box: ${err}`);    
+                });
+
+            // get response from watson
+            var watsonResponse = this.searchDiscovery(searchPromise)
+                .then((res) => {
+                    console.log('_____________________________\nDiscovery Search Results:');
                     console.log(res);
-                    return res; 
-                },
-                (err) => {
-                    window.showErrorMessage(`Failed to get input box: ${err}`);    
-            });
+                    return res;
+                })
+                .catch((err) => { 
+                    window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
+                });
 
-        // get response from watson
-        var watsonResponse = this.searchDiscovery(searchPromise)
-            .then((res) => {
-                console.log('_____________________________\nDiscovery Search Results:');
-                console.log(res);
-                return res;
-            })
-            .catch((err) => { 
-                window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
-            });
+            // parse json response (or get default)
+            var jsonResult = this.parseDiscoveryJSON(watsonResponse, true)
+                .then((res) => {
+                    console.log('_____________________________\nDiscovery Parse Results:');
+                    console.log(res);
+                    return res;
+                })
+                .catch((err) => { 
+                    window.showErrorMessage(`Failed to parseJSON: ${err}`);
+                });
 
-        // parse json response (or get default)
-        var jsonResult = this.parseDiscoveryJSON(watsonResponse, true)
-            .then((res) => {
-                console.log('_____________________________\nDiscovery Parse Results:');
-                console.log(res);
-                return res;
-            })
-            .catch((err) => { 
-                window.showErrorMessage(`Failed to parseJSON: ${err}`);
-            });
+            // show quick pick options
+            let q = <QuickPickOptions> {
+                placeHolder : "Weave Search Results"
+            };
+            var selected = this.promptQuickPick(jsonResult, q, true)
+                .then((res) => {
+                    console.log('_____________________________\nQuick Pick Selection:');
+                    console.log(res);
+                    return res;
+                })
+                .catch((err) => { 
+                    window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
+                });
 
-        // show quick pick options
-        let q = <QuickPickOptions> {
-            placeHolder : "Weave Search Results"
-        };
-        var selected = this.promptQuickPick(jsonResult, q)
-            .then((res) => {
-                console.log('_____________________________\nQuick Pick Selection:');
-                console.log(res);
-                return res;
-            })
-            .catch((err) => { 
-                window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
-             });
+            var cs = await selected;
+            if (cs != 'Search Again') {
+                repeat = false;
+            }
+        }
 
         // show html pages
         this.showHTML(selected, jsonResult);
@@ -97,7 +105,7 @@ export class WeaveSearcher {
         let q = <QuickPickOptions> {
             placeHolder : "Weave Search Results"
         };
-        var selected = this.promptQuickPick(jsonNLCResult, q)
+        var selected = this.promptQuickPick(jsonNLCResult, q, false)
             .then((res) => {
                 console.log('_____________________________\nQuick Pick Selection:');
                 console.log(res);
@@ -249,13 +257,16 @@ export class WeaveSearcher {
         return jsonResult;
     }
 
-    private async promptQuickPick(jsonPromise: Thenable<any>, q: QuickPickOptions) : Promise<any> {
+    private async promptQuickPick(jsonPromise: Thenable<any>, q: QuickPickOptions, researchable: boolean) : Promise<any> {
         
         // wait for required variable
         let jsonResult = await jsonPromise;
 
         // extract keys (filenames)
         var keys = [];
+        if (researchable) {
+            keys.push('Search Again');
+        }
         for (var r in jsonResult) {
             keys.push(r);
         }
