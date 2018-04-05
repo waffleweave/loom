@@ -6,7 +6,7 @@ export class WatsonHelper {
 
     public searchDiscovery(searchText: string): Promise<WebRequest.Response<string>> {
         var url = "https://gateway.watsonplatform.net/discovery/api/v1/environments/" +
-            "3120b03d-ac9c-46ac-a5e8-eaa282965961/collections/9ccfd375-fb1b-45c8-91d5-c3b2128e8038/" +
+            "3120b03d-ac9c-46ac-a5e8-eaa282965961/collections/a200677f-df1c-42b2-a313-cc9284c7a5b5/" +
             "query?version=2017-11-07&count=5&query=" + searchText;
         var headers = this._buildDiscoveryHeaders(searchText);
         var result = WebRequest.json<any>(url, headers);

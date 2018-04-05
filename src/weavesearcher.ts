@@ -1,35 +1,70 @@
 
-import { window, Selection, Position } from 'vscode';
+import { window, commands, Uri, TextDocumentContentProvider, Selection, Position, QuickPickOptions } from 'vscode';
 import { WatsonHelper } from './watsonhelper';
 import { JSONHelper } from './jsonhelper';
+import { DocumentHelper } from './documenthelper';
 
 export class WeaveSearcher {
 
     public async searchBar() {
 
-        // prompt user for input
-        var searchPromise = window.showInputBox();
+        var repeat = true;
+        while (repeat) {
+            // prompt user for input
+            var searchPromise = window.showInputBox()
+                .then((res) => { 
+                        console.log('_____________________________\ninput box results:');
+                        console.log(res);
+                        return res; 
+                    },
+                    (err) => {
+                        window.showErrorMessage(`Failed to get input box: ${err}`);    
+                });
 
-        // get response from watson
-        var watsonResponse = this.searchDiscovery(searchPromise)
-            .catch((err) => { 
-                window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
-             });
+            // get response from watson
+            var watsonResponse = this.searchDiscovery(searchPromise)
+                .then((res) => {
+                    console.log('_____________________________\nDiscovery Search Results:');
+                    console.log(res);
+                    return res;
+                })
+                .catch((err) => { 
+                    window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
+                });
 
-        // parse json response (or get default)
-        var jsonResult = this.parseDiscoveryJSON(watsonResponse)
-            .catch((err) => { 
-                window.showErrorMessage(`Failed to parseJSON: ${err}`);
-            });
+            // parse json response (or get default)
+            var jsonResult = this.parseDiscoveryJSON(watsonResponse, true)
+                .then((res) => {
+                    console.log('_____________________________\nDiscovery Parse Results:');
+                    console.log(res);
+                    return res;
+                })
+                .catch((err) => { 
+                    window.showErrorMessage(`Failed to parseJSON: ${err}`);
+                });
 
-        // show quick pick options
-        var selected = this.promptQuickPick(jsonResult)
-            .catch((err) => { 
-                window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
-             });
+            // show quick pick options
+            let q = <QuickPickOptions> {
+                placeHolder : "Weave Search Results"
+            };
+            var selected = this.promptQuickPick(jsonResult, q, true)
+                .then((res) => {
+                    console.log('_____________________________\nQuick Pick Selection:');
+                    console.log(res);
+                    return res;
+                })
+                .catch((err) => { 
+                    window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
+                });
 
-        // show output channel
-        this.showOutputChannel('Weave Search Results', selected, jsonResult);
+            var cs = await selected;
+            if (cs != 'Search Again') {
+                repeat = false;
+            }
+        }
+
+        // show html pages
+        this.showHTML(selected, jsonResult);
     }
 
     //I've taken this over for the NLC->Discovery path
@@ -47,29 +82,64 @@ export class WeaveSearcher {
         
         //Feed it to NLC
         var NLCResponse = this.classifyWithNLC(selectedPromise)
+            .then((res) => {
+                console.log('_____________________________\nNLC response:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to classify with NLC: ${err}`);
             });
 
-        var jsonNLCResult = this.parseNLCJSON(NLCResponse)
+        var jsonNLCResult = this.parseNLCJSONforSelection(NLCResponse)
+            .then((res) => {
+                console.log('_____________________________\nNLC Parse Results:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
             });
 
+        // show quick pick options
+        let q = <QuickPickOptions> {
+            placeHolder : "Weave Search Results"
+        };
+        var selected = this.promptQuickPick(jsonNLCResult, q, false)
+            .then((res) => {
+                console.log('_____________________________\nQuick Pick Selection:');
+                console.log(res);
+                return res;
+            })
+            .catch((err) => { 
+                window.showErrorMessage(`Failed to promptQuickPick: ${err}`);
+            });
+
         // Now to discovery based on MLE 
-        var discoveryResponse = this.searchDiscovery(jsonNLCResult)
+        var discoveryResponse = this.searchDiscovery(selected)
+            .then((res) => {
+                console.log('_____________________________\nDiscovery Search Results:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to searchDiscovery: ${err}`);
             });
 
         // parse json response (or get default)
-        var jsonDiscoveryResult = this.parseDiscoveryJSON(discoveryResponse)
+        var jsonDiscoveryResult = this.parseDiscoveryJSON(discoveryResponse, true)
+            .then((res) => {
+                console.log('_____________________________\nDiscovery JSON Parse Result:');
+                console.log(res);
+                return res;
+            })
             .catch((err) => { 
                 window.showErrorMessage(`Failed to parseJSON: ${err}`);
              });
 
         // show output channel
-        this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
+        // this.showFirstOutputChannel('Weave Search Results', jsonDiscoveryResult);
+        this.showHTML(null, jsonDiscoveryResult);
     }
 
     private async searchDiscovery(searchThenable: Thenable<string>) : Promise<any> {
@@ -79,7 +149,16 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
-
+        if (searchText == null) {
+            return null;
+        }
+        if (searchText.length < 2) {
+            window.showErrorMessage(`Failed to query watson services: query too short`);
+            return null;
+        } else if (searchText.length > 200) {
+            window.showErrorMessage(`Failed to query watson services: query too long`);
+            return null;
+        }
         // search watson
         var watsonResponse = watsonHelper.searchDiscovery(searchText)
             .then((result) => { return result; })
@@ -97,7 +176,13 @@ export class WeaveSearcher {
 
         // wait for results
         let searchText = await searchThenable;
-
+        if (searchText.length < 2) {
+            window.showErrorMessage(`Failed to query watson services: query too short`);
+            return null;
+        } else if (searchText.length > 1000) {
+            window.showErrorMessage(`Failed to query watson services: query too long`);
+            return null;
+        }
         var NLCAnswer = watsonHelper.hitNLC(searchText)            
             .then((result) => { return result; })
             .catch((err) => {
@@ -108,18 +193,27 @@ export class WeaveSearcher {
         return NLCAnswer;
     }
 
-    public async parseDiscoveryJSON(watsonResponsePromise: Thenable<any>) : Promise<any> {
+    public async parseDiscoveryJSON(watsonResponsePromise: Thenable<any>, html: boolean = false) : Promise<any> {
 
         // initialize stuff while waiting for the searchText and response
         let jsonHelper = new JSONHelper();
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
+
+        if (watsonResponse == null) {
+            return null;
+        }
         if (watsonResponse.error) {
             return new Promise<any>((resolve, reject) => reject(`Watson Discovery Error: ${watsonResponse.description}`));
         }
 
-        let jsonResult = jsonHelper.parseDiscoveryJSON(watsonResponse);
+        var jsonResult: any;
+        if (html) {
+            jsonResult = jsonHelper.parseDiscoveryJSONToHTML(watsonResponse);
+        } else {
+            jsonResult = jsonHelper.parseDiscoveryJSON(watsonResponse);
+        }
 
         // return promise of json result
         return jsonResult;
@@ -132,6 +226,9 @@ export class WeaveSearcher {
 
         // wait for response
         let watsonResponse = await watsonResponsePromise;
+        if (watsonResponse == null) {
+            return null;
+        }
         if (watsonResponse.error) {
             return new Promise<any>((resolve, reject) => reject(`Watson NLC Error: ${watsonResponse.description}`));
         }
@@ -141,19 +238,135 @@ export class WeaveSearcher {
         return jsonResult;
     }
 
-    private async promptQuickPick(jsonPromise: Thenable<any>) : Promise<any> {
+    private async parseNLCJSONforSelection(watsonResponsePromise: Thenable<any>) : Promise<any> {
+
+        // initialize stuff while waiting for the searchText and response
+        let jsonHelper = new JSONHelper();
+
+        // wait for response
+        let watsonResponse = await watsonResponsePromise;
+        if (watsonResponse == null) {
+            return null;
+        }
+        if (watsonResponse.error) {
+            return new Promise<any>((resolve, reject) => reject(`Watson NLC Error: ${watsonResponse.description}`));
+        }
+        let jsonResult = jsonHelper.parseNLCForSelection(watsonResponse);
+
+        // return promise of json result
+        return jsonResult;
+    }
+
+    private async promptQuickPick(jsonPromise: Thenable<any>, q: QuickPickOptions, researchable: boolean) : Promise<any> {
         
         // wait for required variable
         let jsonResult = await jsonPromise;
 
+        if (jsonResult == null) {
+            return null;
+        }
+
         // extract keys (filenames)
         var keys = [];
+        if (researchable) {
+            keys.push('Search Again');
+        }
         for (var r in jsonResult) {
             keys.push(r);
         }
 
         // return promise of selection
-        return window.showQuickPick(keys);
+        return window.showQuickPick(keys,q);
+    }
+
+    private async showHTML(selectedPromise: Thenable<any>, jsonResultPromise: Thenable<any>) : Promise<boolean> {
+
+        let dh = new DocumentHelper();
+
+        var url_1 = require('path').resolve(__dirname, 'temp_show_onetab.html');
+        var url_desc = require('path').resolve(__dirname, 'temp_show_description.html');
+        var url_pseu = require('path').resolve(__dirname, 'temp_show_pseudocode.html');
+        var url_code = require('path').resolve(__dirname, 'temp_show_code.html');
+        var fs = require('fs');
+
+        let jsonResult = await jsonResultPromise;
+        var selected: string;
+
+        if (selectedPromise != null)
+        {
+            selected = await selectedPromise;
+        } 
+        else {
+            // should this be based on top score or is first result (in dictionary) okay
+            for (var r in jsonResult){
+                selected = r;
+                break;
+            }   
+        }
+
+        var html_full = jsonResult[selected]; 
+        let twotab = dh.parseTabs(html_full);
+
+        if (twotab)
+        {
+            let desc_html = dh.Parse2TabDescription(html_full);
+            let pseu_html = dh.Parse2TabPseudo(html_full);
+            let code_html = dh.Parse2TabRealCode(html_full);
+
+            fs.writeFile(url_desc, desc_html, (err) => {
+                if (err) window.showErrorMessage(`FileWriteDesc Error: ${err}`);
+            });
+            fs.writeFile(url_pseu, pseu_html, (err) => {
+                if (err) window.showErrorMessage(`FileWritePseu Error: ${err}`);
+            });
+            fs.writeFile(url_code, code_html, (err) => {
+                if (err) window.showErrorMessage(`FileWriteCode Error: ${err}`);
+            });
+
+            let uri_desc = Uri.file(url_desc);
+            let uri_pseu = Uri.file(url_pseu);
+            let uri_code = Uri.file(url_code);
+
+            await commands.executeCommand('vscode.previewHtml', uri_code, 2, 'Sample Code')
+                                    .then((ret) => {return ret;},
+                                        (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});
+            await commands.executeCommand('vscode.previewHtml', uri_pseu, 2, 'Pseudo Code')
+                                    .then((ret) => {return ret;},
+                                        (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});
+            await commands.executeCommand('vscode.previewHtml', uri_desc, 2, 'Description')
+                                    .then((ret) => {return ret;},
+                                        (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});;
+        } else {
+            
+            let html = dh.parse1Tab(html_full);
+
+            fs.writeFile(url_1, html, (err) => {
+                if (err) window.showErrorMessage(`FileWrite1Tab Error: ${err}`);
+            });
+
+            let uri = Uri.file(url_1);
+
+            await commands.executeCommand('vscode.previewHtml', uri, 2, 'Selected Result')
+                                    .then((ret) => {return ret;},
+                                        (err) => {window.showErrorMessage(`Failed to preview description: ${err}`)});
+        }
+
+        return true;
+    }
+
+    private async showAllResults(jsonResultPromise: Thenable<any>): Promise<boolean> {
+        var jsonResult = await jsonResultPromise;
+        var result:boolean = true; 
+        var count = 0;
+        for (var jr in jsonResult)
+        {
+            var url = require('path').resolve(__dirname, `temp_show_${count}.html`);
+            require('fs').writeFile(url, jsonResult[jr], (err) => {if (err) window.showErrorMessage(`FileWrite Error: ${err}`)});
+            result = result && <boolean>await commands.executeCommand('vscode.previewHtml', Uri.file(url), 2, `Result ${count}`)
+                                        .then((ret) => {return ret;}, (err) => {window.showErrorMessage(`Failed to preview: ${err}`)});
+            count += 1;
+        }
+        return result;
     }
 
     private async showOutputChannel(outputName: string, selectedPromise: Thenable<any>, jsonResultPromise: Thenable<any>) : Promise<boolean> {
